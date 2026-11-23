@@ -109,6 +109,9 @@ p{ margin:0; }
 .btn-block{ width:100%; }
 .btn-sm{ height:36px; padding:0 13px; font-size:.79rem; border-radius:10px; }
 .btn-lg{ height:50px; font-size:.92rem; border-radius:14px; }
+.btn svg{ width:18px; height:18px; flex-shrink:0; stroke:currentColor; fill:none; }
+.btn-sm svg{ width:15px; height:15px; }
+.btn-lg svg{ width:20px; height:20px; }
 
 .icon-btn{
   width:40px; height:40px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center;
@@ -164,15 +167,29 @@ p{ margin:0; }
 .field{ display:flex; flex-direction:column; gap:7px; }
 .label{ font-size:.78rem; font-weight:600; color:var(--muted); letter-spacing:.01em; }
 .input,.select,.textarea{
-  width:100%; background:var(--bg2); border:1px solid var(--border); color:var(--text);
-  border-radius:12px; padding:12px 14px; font-size:.9rem; transition:border-color .18s var(--ease), background .18s;
-  -webkit-appearance:none; appearance:none;
+  width:100%; border:1px solid var(--border); color:var(--text);
+  border-radius:12px; padding:12px 14px; font-size:.9rem; transition:border-color .18s var(--ease), background-color .18s;
+  -webkit-appearance:none; -moz-appearance:none; appearance:none;
 }
-html[data-theme="light"] .input,html[data-theme="light"] .select,html[data-theme="light"] .textarea{ background:#fff; }
+.input,.textarea{ background-color:var(--bg2); }
+select, .select{
+  background-color:var(--bg2) !important;
+  background-image:none !important;
+  padding-right:14px;
+  cursor:pointer;
+}
+html[data-theme="light"] .input,html[data-theme="light"] .textarea{ background-color:#fff; }
+html[data-theme="light"] select,html[data-theme="light"] .select{
+  background-color:#fff !important;
+  background-image:none !important;
+}
 .input::placeholder,.textarea::placeholder{ color:var(--muted); opacity:.72; }
-.input:focus,.select:focus,.textarea:focus{ outline:none; border-color:var(--green); background:var(--surface); }
+.input:focus,.textarea:focus{ outline:none; border-color:var(--green); background-color:var(--surface); }
+select:focus,.select:focus{ outline:none; border-color:var(--green); }
 .textarea{ min-height:96px; resize:vertical; line-height:1.55; }
-.select{ background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23A0A7A1' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:40px; }
+.field.has-error .input, .field.has-error .select, .field.has-error select, .field.has-error .textarea{
+  border-color:var(--danger) !important; background-color:var(--danger-soft) !important;
+}
 .form-grid{ display:grid; gap:14px; }
 @media(min-width:640px){ .form-grid.two{ grid-template-columns:1fr 1fr; } }
 .check{ display:flex; align-items:flex-start; gap:11px; cursor:pointer; padding:12px 0; }
@@ -180,7 +197,7 @@ html[data-theme="light"] .input,html[data-theme="light"] .select,html[data-theme
 .check input:checked{ background:var(--green); border-color:var(--green); }
 .check input:checked::after{ content:''; position:absolute; left:6px; top:2px; width:5px; height:10px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(43deg); }
 .check span{ font-size:.82rem; color:var(--muted); line-height:1.5; }
-.field-error{ color:#E0705F; font-size:.76rem; }
+.field-error{ color:#E0705F; font-size:.8rem; line-height:1.45; padding:10px 14px; border-radius:10px; background:var(--danger-soft); border:1px solid rgba(196,69,59,.3); }
 
 /* ============================================================
    9. APP SHELL
@@ -332,7 +349,60 @@ html[data-theme="light"] .input,html[data-theme="light"] .select,html[data-theme
   display:grid; place-items:center; color:#fff; transition:.18s var(--ease);
 }
 .p-save svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linejoin:round; }
-.p-save.on svg{ fill:var(--green); stroke:var(--green); }
+.p-save.on,
+[data-action="toggle-save"].on {
+  color: #ef4444 !important;
+}
+.p-save.on svg,
+[data-action="toggle-save"].on svg,
+.btn[data-action="toggle-save"].on svg {
+  fill: #ef4444 !important;
+  stroke: #ef4444 !important;
+  animation: heartPop .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes heartPop {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+.p-cart-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  transition: all .18s var(--ease);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.p-cart-btn:hover {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.p-cart-btn:active {
+  transform: scale(0.9);
+}
+.p-cart-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  stroke-width: 1.9;
+}
+.tab .tab-badge[data-saved-badge]{
+  background: #ef4444;
+}
+@keyframes badgeBump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.badge-bump {
+  animation: badgeBump .35s ease-out;
+}
 .p-flag{
   position:absolute; top:8px; left:8px; padding:3px 8px; border-radius:7px; font-size:.62rem;
   font-weight:700; letter-spacing:.03em; text-transform:uppercase; background:var(--green); color:#fff;
@@ -426,12 +496,12 @@ html[data-theme="light"] .input,html[data-theme="light"] .select,html[data-theme
 @media(min-width:900px){ .sticky-actions{ position:static; } }
 
 /* Storefront */
-.store-cover{ height:170px; background:var(--bg2); border-radius:var(--radius); overflow:hidden; position:relative; }
-.store-cover img{ width:100%; height:100%; object-fit:cover; }
+.store-cover{ height:170px; background:linear-gradient(135deg, var(--surface), var(--bg2)); border-radius:var(--radius); overflow:hidden; position:relative; z-index:1; }
+.store-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
 @media(min-width:760px){ .store-cover{ height:230px; } }
-.store-head{ display:flex; gap:16px; margin-top:-34px; padding:0 6px; align-items:flex-end; flex-wrap:wrap; }
-.store-logo{ width:80px; height:80px; border-radius:18px; border:3px solid var(--bg); background:var(--surface); overflow:hidden; display:grid; place-items:center; font-family:var(--font-display); font-size:1.9rem; color:var(--green); flex:0 0 auto; }
-.store-logo img{ width:100%; height:100%; object-fit:cover; }
+.store-head{ position:relative; z-index:10; display:flex; gap:16px; margin-top:-44px; padding:0 12px; align-items:flex-end; flex-wrap:wrap; }
+.store-logo{ position:relative; z-index:12; width:86px; height:86px; border-radius:20px; border:4px solid var(--bg); background:var(--surface); box-shadow:0 6px 18px rgba(0,0,0,.24); overflow:hidden; display:grid; place-items:center; font-family:var(--font-display); font-size:1.9rem; color:var(--green); flex:0 0 auto; }
+.store-logo img{ width:100%; height:100%; object-fit:cover; display:block; }
 .store-title{ flex:1; min-width:200px; padding-bottom:6px; }
 .store-title h1{ font-family:var(--font-display); font-size:1.6rem; font-weight:400; line-height:1.15; }
 
@@ -480,9 +550,44 @@ html[data-theme="light"] .input,html[data-theme="light"] .select,html[data-theme
 .progress{ height:4px; background:var(--border); border-radius:3px; overflow:hidden; margin-top:10px; }
 .progress i{ display:block; height:100%; background:var(--green); width:0; transition:width .25s var(--ease); }
 
+/* PWA Install Banner */
+#pwa-banner{
+  position:fixed; left:50%; bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px);
+  transform:translateX(-50%); z-index:300;
+  width:calc(100% - 32px); max-width:448px;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:18px; padding:14px 16px;
+  display:flex; align-items:center; gap:12px;
+  box-shadow:0 4px 24px rgba(0,0,0,.35);
+  animation:slideUp .3s var(--ease);
+}
+#pwa-banner.hide{ display:none !important; }
+#pwa-banner .pwa-icon{ width:44px; height:44px; border-radius:12px; object-fit:contain; flex:0 0 auto; background:#101310; }
+#pwa-banner .pwa-text{ flex:1; min-width:0; }
+#pwa-banner .pwa-text strong{ display:block; font-size:.86rem; font-weight:700; }
+#pwa-banner .pwa-text span{ font-size:.75rem; color:var(--muted); }
+#pwa-banner .pwa-actions{ display:flex; gap:8px; flex:0 0 auto; }
+#pwa-banner .pwa-install{
+  height:36px; padding:0 14px; border-radius:10px;
+  background:var(--green); color:#fff; font-size:.8rem; font-weight:700;
+  border:none; cursor:pointer; white-space:nowrap;
+  transition:background .18s var(--ease);
+}
+#pwa-banner .pwa-install:hover{ background:var(--green-hi); }
+#pwa-banner .pwa-cancel{
+  width:36px; height:36px; border-radius:10px;
+  background:var(--bg2); border:1px solid var(--border);
+  color:var(--muted); font-size:.95rem; cursor:pointer;
+  display:grid; place-items:center;
+  transition:color .18s var(--ease), border-color .18s var(--ease);
+}
+#pwa-banner .pwa-cancel:hover{ color:var(--text); border-color:var(--text); }
+@media(min-width:900px){ #pwa-banner{ bottom:24px; } }
+
 /* Footer note */
-.foot-note{ text-align:center; padding:30px 20px 20px; color:var(--muted); font-size:.71rem; line-height:1.7; }
+.foot-note{ text-align:center; padding:30px 20px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px); color:var(--muted); font-size:.71rem; line-height:1.7; }
 .foot-note a{ color:var(--green); font-weight:600; }
+@media(min-width:900px){ .foot-note{ padding-bottom:28px; } }
 
 /* Mobile-only PWA shell */
 :root{ --maxw:480px; }
@@ -602,6 +707,19 @@ body{ min-width:320px; }
 <div id="toast-wrap"></div>
 <div id="modal-root"></div>
 
+<!-- ===================== PWA INSTALL BANNER ===================== -->
+<div id="pwa-banner" class="hide" role="complementary" aria-label="Install app">
+  <img class="pwa-icon" src="./jalsa%20logo.png" alt="Jalsa Market icon" />
+  <div class="pwa-text">
+    <strong>Add to Home Screen</strong>
+    <span>Install Jalsa Market for a faster, app-like experience.</span>
+  </div>
+  <div class="pwa-actions">
+    <button class="pwa-install" id="pwa-install-btn" aria-label="Install app">Install</button>
+    <button class="pwa-cancel" id="pwa-cancel-btn" aria-label="Dismiss install banner">✕</button>
+  </div>
+</div>
+
 <script type="module">
 /* ============================================================
    JALSA MARKET — APPLICATION LOGIC
@@ -615,7 +733,7 @@ body{ min-width:320px; }
 const CONFIG = {
   SUPABASE_URL: 'https://aveqcypjvubzncogmcfg.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_J0wp4Cno9fTGVGSGDllvZw_nSuX_ec3',
-  VENDOR_GROUP_URL: 'https://chat.whatsapp.com/GQN7OJ0yENWFceg2hKHrGG?s=cl&p=a&iam=2',
+  VENDOR_GROUP_URL: 'https://chat.whatsapp.com/DpRjbf4lG3AEFl07ONDkLJ?s=cl&p=a&iam=2',
   SUPPORT_WHATSAPP: '2349037343145',   // 09037343145 in international form
   SPLASH_MS: 3200,
   PAGE_SIZE: 12,
@@ -660,8 +778,11 @@ const debounce = (fn, ms = 320) => {
 
 function authEmailError(error) {
   const message = String(error?.message || error || '').toLowerCase();
-  if (message.includes('rate limit') || message.includes('too many') || message.includes('email_rate_limit')) {
+  if (message.includes('rate limit') || message.includes('too many') || message.includes('email_rate_limit') || message.includes('over_email_send_rate_limit')) {
     return 'Too many email requests. Please wait a few minutes, check your inbox or spam folder, and try again.';
+  }
+  if (message.includes('invalid') && message.includes('email')) {
+    return 'The email address is invalid or not accepted. Please use a valid email (e.g. yourname@gmail.com).';
   }
   if (message.includes('invalid login credentials')) {
     return 'The email could not be verified. Request a new sign-in email.';
@@ -734,7 +855,7 @@ const ICON = {
   settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/>',
   shield:'<path d="M12 3 4.5 6v6c0 4.4 3.1 8.2 7.5 9 4.4-.8 7.5-4.6 7.5-9V6Z"/>',
   flag:'<path d="M5 21V4"/><path d="M5 5h11l-1.6 3.2L16 11H5"/>',
-  logout:'<path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/>',
+  logout:'<path d="M9 7l-5 5 5 5"/><path d="M4 12h11"/><path d="M12 20h6a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-6"/>',
   edit:'<path d="M4 20h4L20 8l-4-4L4 16Z"/>',
   image:'<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.7"/><path d="m4 18 5-4.5 4 3.5 3-2.5 4 3.5"/>',
   camera:'<path d="M4 8h3l1.6-2h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.2"/>',
@@ -804,8 +925,10 @@ matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
 const LOCAL = {
   get profile() { try { return JSON.parse(localStorage.getItem('jalsa.demo.profile') || 'null'); } catch { return null; } },
   set profile(v) { localStorage.setItem('jalsa.demo.profile', JSON.stringify(v)); },
-  get cart() { try { return JSON.parse(localStorage.getItem('jalsa.demo.cart') || '[]'); } catch { return []; } },
-  set cart(v) { localStorage.setItem('jalsa.demo.cart', JSON.stringify(v)); },
+  get cart() { try { return JSON.parse(localStorage.getItem('jalsa.guest.cart') || '[]'); } catch { return []; } },
+  set cart(v) { localStorage.setItem('jalsa.guest.cart', JSON.stringify(v)); },
+  get guestCart() { try { return JSON.parse(localStorage.getItem('jalsa.guest.cart') || '[]'); } catch { return []; } },
+  set guestCart(v) { localStorage.setItem('jalsa.guest.cart', JSON.stringify(v)); },
   get saved() { try { return JSON.parse(localStorage.getItem('jalsa.demo.saved') || '[]'); } catch { return []; } },
   set saved(v) { localStorage.setItem('jalsa.demo.saved', JSON.stringify(v)); }
 };
@@ -910,85 +1033,210 @@ const api = {
 
   /* ---- saved ---- */
   async savedList() {
-    if (!supabase) return LOCAL.saved;
-    const { data } = await supabase.from('saved_products')
-      .select('product_id, products(id,name,price,is_available,vendor_id,product_images(storage_path,sort_order),vendors(business_name,slug))')
-      .order('created_at', { ascending: false });
-    return (data || []).map(r => r.products).filter(Boolean).map(normalizeProduct);
+    if (supabase && state.session) {
+      try {
+        const { data } = await supabase.from('saved_products')
+          .select('product_id, products(id,name,price,is_available,vendor_id,product_images(storage_path,sort_order),vendors(business_name,slug))')
+          .order('created_at', { ascending: false });
+        const products = (data || []).map(r => r.products).filter(Boolean).map(normalizeProduct);
+        state.saved = new Set([...products.map(p => p.id), ...LOCAL.saved]);
+        updateSavedBadge();
+        return products;
+      } catch (err) {
+        console.warn('Error fetching saved products from Supabase:', err);
+      }
+    }
+
+    // Guest / local fallback
+    const localIds = LOCAL.saved;
+    state.saved = new Set(localIds);
+    updateSavedBadge();
+    if (!localIds.length) return [];
+    if (supabase) {
+      try {
+        const { data } = await supabase.from('products')
+          .select('id,name,slug,price,currency,is_available,is_preorder,created_at,vendor_id,vendors(id,business_name,slug,status),product_images(storage_path,sort_order)')
+          .in('id', localIds);
+        return (data || []).map(normalizeProduct);
+      } catch (_) {}
+    }
+    return [];
   },
+
   async savedToggle(productId) {
-    if (!supabase) {
-      const list = LOCAL.saved;
-      const i = list.indexOf(productId);
-      i >= 0 ? list.splice(i, 1) : list.push(productId);
-      LOCAL.saved = list;
-      return i < 0;
+    const list = LOCAL.saved;
+    const idx = list.indexOf(productId);
+    const willBeSaved = idx < 0;
+    if (willBeSaved) list.push(productId);
+    else list.splice(idx, 1);
+    LOCAL.saved = list;
+
+    if (willBeSaved) state.saved.add(productId);
+    else state.saved.delete(productId);
+
+    if (supabase && state.session) {
+      try {
+        if (!willBeSaved) {
+          await supabase.from('saved_products').delete().eq('product_id', productId).eq('customer_id', state.session.user.id);
+        } else {
+          await supabase.from('saved_products').upsert({
+            product_id: productId,
+            customer_id: state.session.user.id
+          }, { onConflict: 'customer_id,product_id' });
+        }
+      } catch (err) {
+        console.warn('Supabase saved_products sync error:', err);
+      }
     }
-    const { data: existing } = await supabase.from('saved_products')
-      .select('product_id').eq('product_id', productId).maybeSingle();
-    if (existing) {
-      await supabase.from('saved_products').delete().eq('product_id', productId);
-      return false;
-    }
-    await supabase.from('saved_products').insert({ product_id: productId, customer_id: state.session.user.id });
-    return true;
+    updateSavedBadge();
+    return willBeSaved;
   },
 
   /* ---- cart ---- */
   async loadCart() {
-    if (!supabase) { state.cart = LOCAL.cart; return; }
-    const { data: cart } = await supabase.from('carts').select('id').maybeSingle();
-    if (!cart) { state.cart = []; return; }
-    const { data } = await supabase.from('cart_items')
-      .select('id,quantity,price_snapshot,product_id,'
-        + 'products(id,name,price,is_available,vendor_id,product_images(storage_path,sort_order),'
-        + 'vendors(id,business_name,slug,whatsapp_number,stall_number,preorder_details))')
-      .eq('cart_id', cart.id);
-    state.cart = (data || []).filter(r => r.products).map(r => ({
-      id: r.id,
-      product_id: r.product_id,
-      quantity: r.quantity,
-      price_snapshot: r.price_snapshot,
-      product: normalizeProduct(r.products),
-      vendor: r.products.vendors
-    }));
+    if (!supabase || !state.session) {
+      state.cart = LOCAL.guestCart;
+      updateCartBadge();
+      return;
+    }
+    try {
+      let { data: cart } = await supabase.from('carts').select('id').eq('customer_id', state.session.user.id).maybeSingle();
+      if (!cart) {
+        state.cart = [];
+        updateCartBadge();
+        return;
+      }
+      const { data } = await supabase.from('cart_items')
+        .select('id,quantity,price_snapshot,product_id,'
+          + 'products(id,name,price,is_available,vendor_id,product_images(storage_path,sort_order),'
+          + 'vendors(id,business_name,slug,whatsapp_number,stall_number,preorder_details))')
+        .eq('cart_id', cart.id);
+
+      state.cart = (data || []).filter(r => r.products).map(r => {
+        const normProduct = normalizeProduct(r.products);
+        // Always reflect live price from products table
+        const livePrice = Number(r.products?.price ?? r.price_snapshot ?? 0);
+        return {
+          id: r.id,
+          product_id: r.product_id,
+          quantity: r.quantity,
+          price_snapshot: livePrice,
+          product: { ...normProduct, price: livePrice },
+          vendor: r.products.vendors
+        };
+      });
+    } catch (err) {
+      console.warn('Cart load error:', err);
+      state.cart = [];
+    }
+    updateCartBadge();
   },
 
   async addToCart(product, vendor, qty = 1) {
-    if (!supabase) {
-      const cart = LOCAL.cart;
+    const v = vendor || product.vendors || {};
+    const livePrice = Number(product.price ?? 0);
+
+    if (!supabase || !state.session) {
+      const cart = LOCAL.guestCart;
       const found = cart.find(i => i.product_id === product.id);
-      if (found) found.quantity += qty;
-      else cart.push({ id: crypto.randomUUID(), product_id: product.id, quantity: qty, price_snapshot: product.price, product, vendor });
-      LOCAL.cart = cart; state.cart = cart; return;
+      if (found) {
+        found.quantity += qty;
+        found.price_snapshot = livePrice;
+        if (found.product) found.product.price = livePrice;
+      } else {
+        cart.push({
+          id: 'cart_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          product_id: product.id,
+          quantity: qty,
+          price_snapshot: livePrice,
+          product: { ...product, price: livePrice },
+          vendor: v
+        });
+      }
+      LOCAL.guestCart = cart;
+      state.cart = cart;
+      updateCartBadge();
+      return;
     }
-    let { data: cart } = await supabase.from('carts').select('id').maybeSingle();
-    if (!cart) {
-      const ins = await supabase.from('carts').insert({ customer_id: state.session.user.id }).select('id').single();
-      cart = ins.data;
+
+    try {
+      let { data: cart } = await supabase.from('carts').select('id').eq('customer_id', state.session.user.id).maybeSingle();
+      if (!cart) {
+        const ins = await supabase.from('carts').insert({ customer_id: state.session.user.id }).select('id').single();
+        cart = ins.data;
+      }
+      const { data: existing } = await supabase.from('cart_items')
+        .select('id,quantity').eq('cart_id', cart.id).eq('product_id', product.id).maybeSingle();
+      if (existing) {
+        await supabase.from('cart_items').update({
+          quantity: existing.quantity + qty,
+          price_snapshot: livePrice
+        }).eq('id', existing.id);
+      } else {
+        await supabase.from('cart_items').insert({
+          cart_id: cart.id,
+          product_id: product.id,
+          quantity: qty,
+          price_snapshot: livePrice
+        });
+      }
+      await api.loadCart();
+    } catch (err) {
+      console.warn('Cart add error, falling back locally:', err);
+      const cart = LOCAL.guestCart;
+      const found = cart.find(i => i.product_id === product.id);
+      if (found) {
+        found.quantity += qty;
+        found.price_snapshot = livePrice;
+      } else {
+        cart.push({
+          id: 'cart_' + Date.now(),
+          product_id: product.id,
+          quantity: qty,
+          price_snapshot: livePrice,
+          product: { ...product, price: livePrice },
+          vendor: v
+        });
+      }
+      LOCAL.guestCart = cart;
+      state.cart = cart;
+      updateCartBadge();
     }
-    const { data: existing } = await supabase.from('cart_items')
-      .select('id,quantity').eq('cart_id', cart.id).eq('product_id', product.id).maybeSingle();
-    if (existing) {
-      await supabase.from('cart_items').update({ quantity: existing.quantity + qty }).eq('id', existing.id);
-    } else {
-      await supabase.from('cart_items').insert({
-        cart_id: cart.id, product_id: product.id, quantity: qty, price_snapshot: product.price
-      });
-    }
-    await api.loadCart();
   },
 
   async setQty(itemId, qty) {
-    if (!supabase) {
-      const cart = LOCAL.cart;
+    if (!supabase || !state.session) {
+      const cart = LOCAL.guestCart;
       const it = cart.find(i => i.id === itemId);
-      if (it) { qty <= 0 ? cart.splice(cart.indexOf(it), 1) : it.quantity = qty; }
-      LOCAL.cart = cart; state.cart = cart; return;
+      if (it) {
+        if (qty <= 0) cart.splice(cart.indexOf(it), 1);
+        else it.quantity = qty;
+      }
+      LOCAL.guestCart = cart;
+      state.cart = cart;
+      updateCartBadge();
+      return;
     }
-    if (qty <= 0) await supabase.from('cart_items').delete().eq('id', itemId);
-    else await supabase.from('cart_items').update({ quantity: qty }).eq('id', itemId);
-    await api.loadCart();
+
+    try {
+      if (qty <= 0) {
+        await supabase.from('cart_items').delete().eq('id', itemId);
+      } else {
+        await supabase.from('cart_items').update({ quantity: qty }).eq('id', itemId);
+      }
+      await api.loadCart();
+    } catch (err) {
+      console.warn('Cart qty error, fallback local:', err);
+      const cart = LOCAL.guestCart;
+      const it = cart.find(i => i.id === itemId);
+      if (it) {
+        if (qty <= 0) cart.splice(cart.indexOf(it), 1);
+        else it.quantity = qty;
+      }
+      LOCAL.guestCart = cart;
+      state.cart = cart;
+      updateCartBadge();
+    }
   },
 
   /* ---- analytics ---- */
@@ -1019,7 +1267,7 @@ function normalizeProduct(p) {
 
 function storageUrl(path) {
   if (!path) return null;
-  if (/^https?:/.test(path)) return path;
+  if (/^https?:|^data:/.test(path)) return path;
   if (!supabase) return null;
   const bucket = path.split('/')[0];
   const rest = path.split('/').slice(1).join('/');
@@ -1057,6 +1305,33 @@ async function restoreSession() {
 }
 
 async function afterAuth() {
+  if (supabase && state.session) {
+    try {
+      const guestItems = LOCAL.guestCart;
+      // Immediately wipe guest cart so items are never migrated more than once
+      LOCAL.guestCart = [];
+      try { localStorage.removeItem('jalsa.demo.cart'); } catch (_) {}
+
+      if (guestItems && guestItems.length) {
+        for (const item of guestItems) {
+          if (item.product) {
+            await api.addToCart(item.product, item.vendor, item.quantity);
+          }
+        }
+      }
+      const localSaved = LOCAL.saved;
+      if (localSaved && localSaved.length) {
+        for (const pid of localSaved) {
+          await supabase.from('saved_products').upsert({
+            product_id: pid,
+            customer_id: state.session.user.id
+          }, { onConflict: 'customer_id,product_id' });
+        }
+      }
+    } catch (syncErr) {
+      console.warn('Sync after auth warning:', syncErr);
+    }
+  }
   await Promise.all([refreshCart(), refreshSaved()]);
   if (state.vendor) state.mode = 'vendor';
 }
@@ -1127,6 +1402,7 @@ async function refreshCart() { await api.loadCart(); updateCartBadge(); }
 async function refreshSaved() {
   const list = await api.savedList();
   state.saved = new Set(list.map(p => p.id));
+  updateSavedBadge();
 }
 
 async function customerSignup({ email, fullName, phone, consent }) {
@@ -1151,7 +1427,7 @@ async function customerSignup({ email, fullName, phone, consent }) {
     }
   });
   if (error) throw new Error(authEmailError(error));
-  throw new Error('Check your email and open the confirmation link to finish creating your account.');
+  return { checkEmail: true, email, role: 'user' };
 }
 
 async function vendorSignup(form) {
@@ -1200,7 +1476,7 @@ async function vendorSignup(form) {
     }
   });
   if (error) throw new Error(authEmailError(error));
-  throw new Error('Check your email and open the confirmation link to finish creating your vendor account.');
+  return { checkEmail: true, email: form.email, role: 'vendor' };
 }
 
 async function login(email, password) {
@@ -1235,7 +1511,7 @@ async function loginByNameAndPhone(role, name, phone) {
       LOCAL.profile = state.profile;
       state.mode = 'vendor';
       await afterAuth();
-      return;
+      return { checkEmail: false, role: 'vendor' };
     }
 
     const existing = LOCAL.profile;
@@ -1245,59 +1521,80 @@ async function loginByNameAndPhone(role, name, phone) {
     LOCAL.profile = state.profile;
     state.mode = 'customer';
     await afterAuth();
-    return;
+    return { checkEmail: false, role: 'user' };
   }
 
-  if (role === 'vendor') {
-    const { data, error } = await supabase.rpc('jalsa_lookup_login', {
-      p_role: 'vendor',
+  // 1. Try direct password authentication (never sends email)
+  let directAuth = null;
+  try {
+    const { data: authData, error: authErr } = await supabase.rpc('jalsa_authenticate_login', {
+      p_role: role,
       p_name: cleanName,
       p_phone: cleanPhone
     });
-    if (error) throw new Error(error.message);
-    const match = Array.isArray(data) ? data[0] : data;
-    if (!match?.email) throw new Error('No vendor account matches those details.');
-    canSendAuthEmail(match.email);
-    const otp = await supabase.auth.signInWithOtp({
-      email: match.email,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: `${location.origin}${location.pathname}`
-        }
+    if (!authErr && authData) {
+      directAuth = Array.isArray(authData) ? authData[0] : authData;
+    }
+  } catch (_) {}
+
+  if (directAuth?.email && directAuth?.auth_token) {
+    const { error: signErr } = await supabase.auth.signInWithPassword({
+      email: directAuth.email,
+      password: directAuth.auth_token
     });
-    if (otp.error) throw new Error(authEmailError(otp.error));
-    sessionStorage.setItem('jalsa.pending.login', JSON.stringify({
-      role: 'vendor',
-      name: cleanName,
-      phone: cleanPhone
-    }));
-    throw new Error('Check your email and open the confirmation link to log in.');
-    return;
+    if (!signErr) {
+      await restoreSession();
+      return { checkEmail: false, role };
+    }
   }
 
+  // 2. Direct lookup fallback (logs in immediately without sending any email)
   const { data, error } = await supabase.rpc('jalsa_lookup_login', {
-    p_role: 'user',
+    p_role: role,
     p_name: cleanName,
     p_phone: cleanPhone
   });
   if (error) throw new Error(error.message);
   const match = Array.isArray(data) ? data[0] : data;
-  if (!match?.email) throw new Error('No user account matches those details.');
-  canSendAuthEmail(match.email);
-  const otp = await supabase.auth.signInWithOtp({
-    email: match.email,
-    options: {
-      shouldCreateUser: false,
-      emailRedirectTo: `${location.origin}${location.pathname}`
-    }
-  });
-  if (otp.error) throw new Error(authEmailError(otp.error));
-  sessionStorage.setItem('jalsa.pending.login', JSON.stringify({
-    role: 'user',
-    name: cleanName,
-    phone: cleanPhone
-  }));
-  throw new Error('Check your email and open the confirmation link to log in.');
+  if (!match?.email && !match?.id) {
+    throw new Error(role === 'vendor'
+      ? 'No vendor account matches that business name and phone number.'
+      : 'No account matches that name and phone number.');
+  }
+
+  // Fetch full profile and vendor store
+  let prof = null;
+  if (match.id) {
+    const { data: pData } = await supabase.from('profiles').select('*').eq('id', match.id).maybeSingle();
+    prof = pData;
+  }
+  if (!prof && match.email) {
+    const { data: pData } = await supabase.from('profiles').select('*').eq('email', match.email).maybeSingle();
+    prof = pData;
+  }
+  if (!prof) {
+    prof = {
+      id: match.id || 'usr_' + Date.now(),
+      full_name: match.full_name || cleanName,
+      email: match.email || '',
+      phone: match.phone || cleanPhone,
+      is_vendor: role === 'vendor'
+    };
+  }
+
+  state.profile = prof;
+  LOCAL.profile = prof;
+
+  if (role === 'vendor' || prof.is_vendor) {
+    const { data: v } = await supabase.from('vendors').select('*').eq('owner_id', prof.id).maybeSingle();
+    state.vendor = v || null;
+    state.mode = 'vendor';
+  } else {
+    state.mode = 'customer';
+  }
+
+  await afterAuth();
+  return { checkEmail: false, role };
 }
 
 async function logout() {
@@ -1305,6 +1602,8 @@ async function logout() {
   else { LOCAL.profile = null; }
   state.session = null; state.profile = null; state.vendor = null;
   state.cart = []; state.saved = new Set(); state.isAdmin = false; state.mode = 'customer';
+  updateCartBadge();
+  updateSavedBadge();
   location.hash = '#/home';
   renderAuth();
 }
@@ -1365,10 +1664,26 @@ async function uploadImage(file, preset, vendorId, onProgress) {
    7. RENDER — SHARED
    ------------------------------------------------------------ */
 function updateCartBadge() {
-  const count = state.cart.reduce((s, i) => s + i.quantity, 0);
+  const count = state.cart.reduce((s, i) => s + (i.quantity || 1), 0);
   $$('[data-cart-badge]').forEach(el => {
     el.textContent = count > 99 ? '99+' : String(count);
     el.classList.toggle('hide', count === 0);
+  });
+}
+
+function updateSavedBadge() {
+  const count = state.saved.size;
+  $$('[data-saved-badge]').forEach(el => {
+    el.textContent = count > 99 ? '99+' : String(count);
+    el.classList.toggle('hide', count === 0);
+  });
+}
+
+function animateCartBadge() {
+  $$('[data-cart-badge]').forEach(el => {
+    el.classList.remove('badge-bump');
+    void el.offsetWidth;
+    el.classList.add('badge-bump');
   });
 }
 
@@ -1383,7 +1698,7 @@ function renderHeader() {
       ${logoSVG(30)}
       <span class="brand-text">
         <span class="brand-name">Jalsa Market</span>
-        <span class="brand-greet">${isVendorMode ? esc(state.vendor.business_name) : 'Assalamu Alaikum, ' + esc(firstName)}</span>
+        <span class="brand-greet">${isVendorMode ? esc(state.vendor.business_name) : (p ? 'Assalamu Alaikum, ' + esc(firstName) : 'Discover & Shop')}</span>
       </span>
     </a>
     <div class="header-actions">
@@ -1395,11 +1710,16 @@ function renderHeader() {
         ${icon('cart')}
         <span class="cart-dot hide" data-cart-badge>0</span>
       </button>
-      <button class="icon-btn" data-action="go-me" aria-label="Profile">
-        <span class="avatar">${esc(initials(p?.full_name))}</span>
-      </button>
+      ${p ? `
+        <button class="icon-btn" data-action="go-me" aria-label="Profile">
+          <span class="avatar">${esc(initials(p?.full_name))}</span>
+        </button>` : `
+        <button class="btn btn-sm btn-primary" data-action="auth-view" data-view="login" style="height:34px;padding:0 14px;font-size:.78rem">
+          Sign In
+        </button>`}
     </div>`;
   updateCartBadge();
+  updateSavedBadge();
 }
 
 function logoSVG(size = 30) {
@@ -1420,8 +1740,8 @@ function renderTabbar() {
     : [
         { id: 'home', label: 'Home', ico: 'home', href: '#/home' },
         { id: 'explore', label: 'Explore', ico: 'explore', href: '#/explore' },
-        { id: 'saved', label: 'Saved', ico: 'saved', href: '#/saved' },
-        { id: 'cart', label: 'Cart', ico: 'cart', href: '#/cart', badge: true },
+        { id: 'saved', label: 'Saved', ico: 'saved', href: '#/saved', badge: 'saved' },
+        { id: 'cart', label: 'Cart', ico: 'cart', href: '#/cart', badge: 'cart' },
         { id: 'me', label: 'Me', ico: 'me', href: '#/me' }
       ];
 
@@ -1429,9 +1749,11 @@ function renderTabbar() {
   el.innerHTML = `<div class="tabbar-wrap">` + tabs.map(t => `
     <a class="tab ${current === t.id ? 'active' : ''}" href="${t.href}">
       ${icon(t.ico)}<span>${t.label}</span>
-      ${t.badge ? `<span class="tab-badge hide" data-cart-badge>0</span>` : ''}
+      ${t.badge === 'cart' ? `<span class="tab-badge hide" data-cart-badge>0</span>` : ''}
+      ${t.badge === 'saved' ? `<span class="tab-badge hide" data-saved-badge>0</span>` : ''}
     </a>`).join('') + `</div>`;
   updateCartBadge();
+  updateSavedBadge();
 }
 
 function productCard(p) {
@@ -1451,7 +1773,13 @@ function productCard(p) {
     <div class="p-body">
       <a href="#/product/${esc(p.id)}" class="p-name">${esc(p.name)}</a>
       <span class="p-vendor">${esc(p.vendor_name || '')}</span>
-      <span class="p-price">${money(p.price)}</span>
+      <div class="row-between" style="margin-top:auto;padding-top:6px;align-items:center">
+        <span class="p-price" style="margin:0;padding:0">${money(p.price)}</span>
+        ${p.is_available !== false ? `
+          <button class="p-cart-btn" data-action="quick-add-cart" data-id="${esc(p.id)}" title="Add to cart" aria-label="Add to cart">
+            ${icon('cart')}
+          </button>` : ''}
+      </div>
     </div>
   </article>`;
 }
@@ -1481,7 +1809,7 @@ function skeletonGrid(n = 6) {
 /* ------------------------------------------------------------
    8. RENDER — AUTH SCREEN
    ------------------------------------------------------------ */
-function renderAuth(view = 'login') {
+function renderAuth(view = 'login', data = null) {
   const el = $('#auth');
   $('#app').classList.add('hide');
   el.classList.remove('hide');
@@ -1489,6 +1817,41 @@ function renderAuth(view = 'login') {
 
   if (view === 'welcome') {
     return renderAuth('login');
+  }
+
+  if (view === 'check-email') {
+    el.classList.add('auth-card-layout');
+    const email = data?.email || 'your email address';
+    const isVendor = data?.role === 'vendor';
+    el.innerHTML = `
+      <div class="auth-header">
+        <img class="auth-brand" src="./jalsa%20logo.png" alt="Jalsa Market">
+        <h1>Check Your Email</h1>
+        <p>Verification link sent</p>
+      </div>
+      <div class="auth-body-card">
+        <div class="auth-card" style="text-align:center">
+          <div style="width:68px;height:68px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;margin:0 auto 16px;">
+            <svg style="width:34px;height:34px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </div>
+          <h2>Verification Sent!</h2>
+          <p style="margin-top:8px;font-size:.88rem">
+            We sent a secure sign-in link to<br>
+            <strong style="color:var(--text);font-size:.95rem;word-break:break-all">${esc(email)}</strong>
+          </p>
+          <div class="notice info" style="margin:20px 0;text-align:left">
+            <span>Click the confirmation link in the email to activate your ${isVendor ? 'vendor storefront' : 'account'} and continue.</span>
+          </div>
+          <p class="sub" style="font-size:.76rem;margin-bottom:22px">
+            Didn't receive it? Check your spam/junk folder or wait 60 seconds before requesting another email.
+          </p>
+          <button class="btn btn-primary btn-block btn-lg" data-action="auth-view" data-view="login">Back to Log In</button>
+        </div>
+      </div>`;
+    return;
   }
 
   if (view === 'customer') {
@@ -1509,15 +1872,15 @@ function renderAuth(view = 'login') {
           </div>
           <form id="form-customer" class="form-grid" novalidate>
             <div class="field">
-              <label class="label" for="c-name">Full name</label>
+              <label class="label" for="c-name">Full name *</label>
               <input class="input" id="c-name" name="full_name" autocomplete="name" required maxlength="120" placeholder="Khalifah Bello">
             </div>
             <div class="field">
-              <label class="label" for="c-email">Email address</label>
+              <label class="label" for="c-email">Email address *</label>
               <input class="input" id="c-email" name="email" type="email" autocomplete="email" required placeholder="hello@example.com">
             </div>
             <div class="field">
-              <label class="label" for="c-phone">Phone number</label>
+              <label class="label" for="c-phone">Phone number *</label>
               <input class="input" id="c-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="0803 000 0000">
             </div>
             <label class="check">
@@ -1531,6 +1894,9 @@ function renderAuth(view = 'login') {
             Already have an account?
             <a href="#" data-action="auth-view" data-view="login">Log In</a>
           </div>
+          <div style="margin-top:14px;text-align:center">
+            <button type="button" data-action="guest-browse" style="background:none;border:none;cursor:pointer;font-size:.82rem;color:var(--muted);text-decoration:underline">Skip for now & browse marketplace →</button>
+          </div>
         </div>
       </div>`;
     return;
@@ -1541,8 +1907,8 @@ function renderAuth(view = 'login') {
     el.innerHTML = `
       <div class="auth-header">
         <img class="auth-brand" src="./jalsa%20logo.png" alt="Jalsa Market">
-        <h1>Create Account</h1>
-        <p>Join the Jalsa community today</p>
+        <h1>Create Storefront</h1>
+        <p>Join the Jalsa vendor community</p>
       </div>
       <div class="auth-body-card">
         <div class="auth-card">
@@ -1554,42 +1920,42 @@ function renderAuth(view = 'login') {
           </div>
           <form id="form-vendor" class="form-grid" novalidate>
             <div class="field">
-              <label class="label" for="v-business">Business name</label>
-              <input class="input" id="v-business" name="business_name" required maxlength="120" placeholder="Al-Barakah Snacks">
+              <label class="label" for="v-business">Business name *</label>
+              <input class="input" id="v-business" name="business_name" required maxlength="120" placeholder="e.g. Al-Barakah Snacks">
             </div>
             <div class="field">
-              <label class="label" for="v-owner">Owner's full name</label>
-              <input class="input" id="v-owner" name="owner_name" autocomplete="name" required maxlength="120" placeholder="Khalifah Bello">
+              <label class="label" for="v-owner">Owner's full name *</label>
+              <input class="input" id="v-owner" name="owner_name" autocomplete="name" required maxlength="120" placeholder="e.g. Khalifah Bello">
             </div>
             <div class="field">
-              <label class="label" for="v-email">Email address</label>
-              <input class="input" id="v-email" name="email" type="email" autocomplete="email" required placeholder="hello@example.com">
+              <label class="label" for="v-email">Email address *</label>
+              <input class="input" id="v-email" name="email" type="email" autocomplete="email" required placeholder="vendor@example.com">
             </div>
             <div class="field">
-              <label class="label" for="v-phone">Phone number (WhatsApp)</label>
+              <label class="label" for="v-phone">WhatsApp phone number *</label>
               <input class="input" id="v-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="0803 000 0000">
             </div>
             <div class="field">
-              <label class="label" for="v-category">Business category</label>
+              <label class="label" for="v-category">Business category *</label>
               <select class="select" id="v-category" name="business_category" required>
                 ${['Food & Snacks','Fashion','Books','Beauty','Electronics','Accessories','Shoes','Perfumes','Islamic Products','Home & Lifestyle','Phones & Accessories','Gifts','Groceries','Services','Other']
                   .map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
               </select>
             </div>
             <div class="field">
-              <label class="label" for="v-state">State</label>
-              <input class="input" id="v-state" name="state" required maxlength="60" placeholder="Lagos">
+              <label class="label" for="v-state">State *</label>
+              <input class="input" id="v-state" name="state" required maxlength="60" placeholder="e.g. Lagos">
             </div>
             <div class="field">
-              <label class="label" for="v-district">District / Dila</label>
-              <input class="input" id="v-district" name="district" required maxlength="80" placeholder="Epe">
+              <label class="label" for="v-district">District / Dila *</label>
+              <input class="input" id="v-district" name="district" required maxlength="80" placeholder="e.g. Epe">
             </div>
             <div class="field">
-              <label class="label" for="v-jamaat">Local Jamaat</label>
-              <input class="input" id="v-jamaat" name="local_jamaat" required maxlength="80" placeholder="Jamaat name">
+              <label class="label" for="v-jamaat">Local Jamaat *</label>
+              <input class="input" id="v-jamaat" name="local_jamaat" required maxlength="80" placeholder="e.g. Jamaat name">
             </div>
             <div class="field">
-              <label class="label" for="v-participation">Participation type</label>
+              <label class="label" for="v-participation">Participation type *</label>
               <select class="select" id="v-participation" name="participation_type" required>
                 <option value="physical_stall">Physical stall at Jalsa</option>
                 <option value="preorder_only">Preorder only</option>
@@ -1598,11 +1964,11 @@ function renderAuth(view = 'login') {
             </div>
             <div class="field">
               <label class="label" for="v-stall">Stall number (optional)</label>
-              <input class="input" id="v-stall" name="stall_number" maxlength="30" placeholder="B12">
+              <input class="input" id="v-stall" name="stall_number" maxlength="30" placeholder="e.g. B12">
             </div>
             <div class="field">
-              <label class="label" for="v-desc">Business description</label>
-              <textarea class="textarea" id="v-desc" name="description" maxlength="600" placeholder="Tell customers what you sell."></textarea>
+              <label class="label" for="v-desc">Business description (optional)</label>
+              <textarea class="textarea" id="v-desc" name="description" maxlength="600" placeholder="Tell customers what you sell..."></textarea>
             </div>
             <p class="field-error hide" id="v-error"></p>
             <button class="btn btn-primary btn-lg btn-block" type="submit">Create Storefront</button>
@@ -1610,6 +1976,9 @@ function renderAuth(view = 'login') {
           <div class="auth-toggle">
             Already have an account?
             <a href="#" data-action="auth-view" data-view="login">Log In</a>
+          </div>
+          <div style="margin-top:14px;text-align:center">
+            <button type="button" data-action="guest-browse" style="background:none;border:none;cursor:pointer;font-size:.82rem;color:var(--muted);text-decoration:underline">Skip for now & browse marketplace →</button>
           </div>
         </div>
       </div>`;
@@ -1636,11 +2005,11 @@ function renderAuth(view = 'login') {
           </div>
           <form id="form-login" class="form-grid" novalidate>
             <div class="field">
-              <label class="label" for="l-name">${isVendor ? 'Business name' : 'Full name'}</label>
+              <label class="label" for="l-name">${isVendor ? 'Business name *' : 'Full name *'}</label>
               <input class="input" id="l-name" name="name" type="text" autocomplete="${isVendor ? 'organization' : 'name'}" placeholder="${isVendor ? 'Al-Barakah Snacks' : 'Khalifah Bello'}" required>
             </div>
             <div class="field">
-              <label class="label" for="l-phone">Phone number</label>
+              <label class="label" for="l-phone">Phone number *</label>
               <input class="input" id="l-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0803 000 0000" required>
             </div>
             <p class="field-error hide" id="l-error"></p>
@@ -1649,6 +2018,15 @@ function renderAuth(view = 'login') {
           <div class="auth-toggle">
             Don't have an account?
             <a href="#" data-action="auth-view" data-view="${isVendor ? 'vendor' : 'customer'}">Sign Up</a>
+          </div>
+          <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
+            <p class="sub" style="margin-bottom:8px">Want to sell your products at Jalsa?</p>
+            <button type="button" class="btn btn-ghost btn-block" data-action="auth-view" data-view="vendor" style="border-color:var(--green);color:var(--green);font-weight:600">
+              🏪 Open a Vendor Storefront
+            </button>
+            <div style="margin-top:12px">
+              <button type="button" data-action="guest-browse" style="background:none;border:none;cursor:pointer;font-size:.82rem;color:var(--muted);text-decoration:underline">Skip for now & browse marketplace →</button>
+            </div>
           </div>
         </div>
       </div>`;
@@ -1674,7 +2052,12 @@ async function router() {
   }
   if (r.name === 'privacy') return renderPrivacy();
 
-  if (!state.profile) { renderAuth('login'); return; }
+  // Protected routes that strictly require authentication
+  const authOnly = ['vendor'];
+  if (!state.profile && authOnly.includes(r.name)) {
+    renderAuth('login');
+    return;
+  }
 
   $('#auth').classList.add('hide');
   $('#app').classList.remove('hide');
@@ -2047,19 +2430,54 @@ async function renderSaved() {
 async function renderCart() {
   const view = $('#view');
   await refreshCart();
+
+  // Refresh live product prices & availability directly from Supabase for all items in the cart
+  if (state.cart.length && supabase) {
+    const pids = state.cart.map(i => i.product_id).filter(Boolean);
+    if (pids.length) {
+      try {
+        const { data: freshProducts } = await supabase.from('products')
+          .select('id,name,price,is_available,vendors(id,business_name,slug,whatsapp_number,stall_number)').in('id', pids);
+        if (freshProducts?.length) {
+          const freshMap = new Map(freshProducts.map(p => [p.id, p]));
+          for (const item of state.cart) {
+            const fresh = freshMap.get(item.product_id);
+            if (fresh) {
+              const livePrice = Number(fresh.price ?? 0);
+              item.price_snapshot = livePrice;
+              if (item.product) {
+                item.product.name = fresh.name;
+                item.product.price = livePrice;
+                item.product.is_available = fresh.is_available;
+              }
+              if (fresh.vendors) item.vendor = fresh.vendors;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
   const groups = new Map();
   for (const item of state.cart) {
     const vid = item.vendor?.id || item.product?.vendor_id || 'unknown';
     if (!groups.has(vid)) groups.set(vid, { vendor: item.vendor, items: [] });
     groups.get(vid).items.push(item);
   }
-  const total = state.cart.reduce((s, i) => s + (i.price_snapshot || i.product?.price || 0) * i.quantity, 0);
+
+  const total = state.cart.reduce((s, i) => {
+    const unitPrice = Number(i.product?.price ?? i.price_snapshot ?? 0);
+    return s + unitPrice * (i.quantity || 1);
+  }, 0);
 
   view.innerHTML = `
   <div class="container">
-    <div style="padding:22px 0 16px">
-      <h1 class="display" style="font-size:1.7rem">Your cart</h1>
-      <p class="sub">${state.cart.length ? state.cart.length + ' item(s) from ' + groups.size + ' vendor(s)' : 'Add products from any vendor'}</p>
+    <div class="row-between" style="padding:22px 0 16px;align-items:flex-start">
+      <div>
+        <h1 class="display" style="font-size:1.7rem">Your cart</h1>
+        <p class="sub">${state.cart.length ? state.cart.reduce((s, i) => s + (i.quantity || 1), 0) + ' item(s) from ' + groups.size + ' vendor(s)' : 'Add products from any vendor'}</p>
+      </div>
+      ${state.cart.length ? `<button class="btn btn-sm btn-ghost" data-action="clear-cart" style="color:var(--danger);font-size:.78rem">Clear all</button>` : ''}
     </div>
 
     ${state.cart.length ? `
@@ -2070,12 +2488,15 @@ async function renderCart() {
             <h4>${esc(g.vendor?.business_name || 'Vendor')}</h4>
             ${g.vendor?.stall_number ? `<span class="sub" style="font-size:.72rem">Stall ${esc(g.vendor.stall_number)}</span>` : ''}
           </div>
-          ${g.items.map(i => `
+          ${g.items.map(i => {
+            const unitPrice = Number(i.product?.price ?? i.price_snapshot ?? 0);
+            return `
             <div class="cg-item">
               <div class="cg-thumb">${i.product?.image ? `<img src="${esc(i.product.image)}" alt="" loading="lazy">` : ''}</div>
               <div class="cg-info">
                 <h5>${esc(i.product?.name || 'Product')}</h5>
-                <div class="pr">${money(i.price_snapshot || i.product?.price)}</div>
+                <div class="pr">${money(unitPrice)}</div>
+                ${i.product?.is_available === false ? '<span class="status suspended" style="font-size:.65rem;margin-top:3px">Currently unavailable</span>' : ''}
                 <div class="qty">
                   <button data-action="cart-qty" data-id="${esc(i.id)}" data-qty="${i.quantity - 1}" aria-label="Decrease">${icon('minus')}</button>
                   <span>${i.quantity}</span>
@@ -2083,9 +2504,10 @@ async function renderCart() {
                 </div>
               </div>
               <button class="icon-btn" data-action="cart-remove" data-id="${esc(i.id)}" aria-label="Remove" style="align-self:flex-start">${icon('trash')}</button>
-            </div>`).join('')}
+            </div>`;
+          }).join('')}
           <div class="cg-foot">
-            <span class="sub-total">Vendor subtotal <b>${money(g.items.reduce((s, i) => s + (i.price_snapshot || i.product?.price || 0) * i.quantity, 0))}</b></span>
+            <span class="sub-total">Vendor subtotal <b>${money(g.items.reduce((s, i) => s + Number(i.product?.price ?? i.price_snapshot ?? 0) * (i.quantity || 1), 0))}</b></span>
             <button class="btn btn-primary btn-sm" data-action="checkout-vendor" data-vendor="${esc(g.vendor?.id || '')}">
               ${icon('whatsapp')} Order on WhatsApp
             </button>
@@ -2093,7 +2515,7 @@ async function renderCart() {
         </div>`).join('')}
 
       <div class="cart-summary" style="margin-top:6px">
-        <div class="row-between"><span class="sub">Items</span><span>${state.cart.reduce((s, i) => s + i.quantity, 0)}</span></div>
+        <div class="row-between"><span class="sub">Items</span><span>${state.cart.reduce((s, i) => s + (i.quantity || 1), 0)}</span></div>
         <div class="row-between"><span class="sub">Vendors</span><span>${groups.size}</span></div>
         <div class="row-between total"><span>Combined value</span><span>${money(total)}</span></div>
         <p class="sub" style="font-size:.72rem;margin-top:12px;line-height:1.6">
@@ -2142,15 +2564,24 @@ function renderMe() {
     </div>`}
 
     <div style="margin-top:14px">
-      ${listItem('saved', 'Saved products', 'Items you want to revisit', '#/saved')}
-      ${listItem('cart', 'Your cart', 'Products from multiple vendors', '#/cart')}
+      ${state.isAdmin ? listItem('shield', 'Admin Control Centre', 'Approve vendors, manage products and reports', '#/admin') : ''}
+      ${listItem('saved', 'Saved products', state.saved.size ? `${state.saved.size} item(s) saved` : 'Items you want to revisit', '#/saved')}
+      ${listItem('cart', 'Your cart', state.cart.length ? `${state.cart.reduce((s, i) => s + (i.quantity || 1), 0)} item(s) in cart` : 'Products from multiple vendors', '#/cart')}
       ${listItem('settings', 'Settings', 'Theme, text size and preferences', '#/settings')}
       ${listItem('shield', 'Privacy', 'How your information is used', '#/privacy')}
       ${listItem('flag', 'Report a problem', 'Contact the Jalsa Market team', supportLink('Assalamu Alaikum, I would like to report a problem on Jalsa Market.'))}
       ${listItem('whatsapp', 'Contact support', WA_SUPPORT_DISPLAY, supportLink('Assalamu Alaikum, I need help with Jalsa Market.'))}
     </div>
 
-    <button class="btn btn-danger btn-block" style="margin-top:18px" data-action="logout">${icon('logout')} Log out</button>
+    <div style="margin-top:20px;display:flex;justify-content:center">
+      ${state.profile ? `
+        <button class="btn btn-danger btn-sm" style="min-width:180px;height:38px;padding:0 22px;font-size:.82rem" data-action="logout">
+          ${icon('logout')} Log out
+        </button>` : `
+        <button class="btn btn-primary btn-sm" style="min-width:180px;height:38px;padding:0 22px;font-size:.82rem" data-action="auth-view" data-view="login">
+          Sign In
+        </button>`}
+    </div>
     <div class="foot-note">Jalsa Market · v1.0</div>
   </div>`;
 }
@@ -2392,9 +2823,17 @@ function renderVendorStorefront() {
 function renderVendorProfile() {
   const v = state.vendor;
   const view = $('#view');
+  if (!v) {
+    view.innerHTML = `<div class="container">${emptyState('store', 'No storefront found', 'Create a storefront first.')}</div>`;
+    return;
+  }
+  const logo = v.logo_path ? storageUrl(v.logo_path) : null;
+  const cover = v.cover_path ? storageUrl(v.cover_path) : null;
+
   view.innerHTML = `
   <div class="container">
     <div style="padding:22px 0 16px">
+      <a class="icon-btn" href="#/vendor" aria-label="Back to dashboard" style="margin-bottom:10px">${icon('chevL')}</a>
       <h1 class="display" style="font-size:1.7rem">Business profile</h1>
       <p class="sub">This information appears on your public storefront.</p>
     </div>
@@ -2403,38 +2842,82 @@ function renderVendorProfile() {
       <div class="form-grid two">
         <div>
           <label class="label">Logo (256×256)</label>
-          <label class="upload-box" style="margin-top:7px;display:block">
+          <label class="upload-box" style="margin-top:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:110px">
             <input type="file" accept="image/*" class="sr-only" data-upload="logo">
-            ${icon('camera')}
-            <p>Tap to upload logo</p>
+            ${logo ? `<img src="${esc(logo)}" style="width:50px;height:50px;border-radius:12px;object-fit:cover;margin-bottom:6px;border:1px solid var(--border)" alt="Current logo">` : icon('camera')}
+            <p style="margin:0">${logo ? 'Tap to change logo' : 'Tap to upload logo'}</p>
           </label>
         </div>
         <div>
-          <label class="label">Cover (1200×400)</label>
-          <label class="upload-box" style="margin-top:7px;display:block">
+          <label class="label">Cover banner (1200×400)</label>
+          <label class="upload-box" style="margin-top:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:110px">
             <input type="file" accept="image/*" class="sr-only" data-upload="cover">
-            ${icon('image')}
-            <p>Tap to upload cover</p>
+            ${cover ? `<img src="${esc(cover)}" style="width:100%;max-width:140px;height:45px;border-radius:8px;object-fit:cover;margin-bottom:6px;border:1px solid var(--border)" alt="Current cover">` : icon('image')}
+            <p style="margin:0">${cover ? 'Tap to change cover' : 'Tap to upload cover'}</p>
           </label>
         </div>
       </div>
     </div>
     <div class="panel">
-      <h4 style="font-size:.84rem;margin-bottom:12px">Details</h4>
+      <h4 style="font-size:.84rem;margin-bottom:12px">Store details</h4>
       <form id="form-vendor-edit" class="form-grid">
-        <div class="field"><label class="label">Business name</label>
-          <input class="input" name="business_name" value="${esc(v.business_name)}" required></div>
-        <div class="field"><label class="label">Description</label>
-          <textarea class="textarea" name="description">${esc(v.description || '')}</textarea></div>
-        <div class="field"><label class="label">Preorder details</label>
-          <textarea class="textarea" name="preorder_details" placeholder="e.g. Preorders close 3 days before Jalsa.">${esc(v.preorder_details || '')}</textarea></div>
-        <div class="field"><label class="label">Collection information</label>
-          <textarea class="textarea" name="collection_info" placeholder="e.g. Collect from Stall B12, Friday–Sunday.">${esc(v.collection_info || '')}</textarea></div>
-        <div class="field"><label class="label">WhatsApp number</label>
-          <input class="input" name="whatsapp_number" value="${esc(v.whatsapp_number || '')}"></div>
-        <div class="field"><label class="label">Stall number</label>
-          <input class="input" name="stall_number" value="${esc(v.stall_number || '')}"></div>
-        <button class="btn btn-primary btn-block" type="submit">Save changes</button>
+        <div class="field">
+          <label class="label">Business name *</label>
+          <input class="input" name="business_name" value="${esc(v.business_name)}" required>
+        </div>
+        <div class="field">
+          <label class="label">Business category *</label>
+          <select class="select" name="business_category" required>
+            ${['Food & Snacks','Fashion','Books','Beauty','Electronics','Accessories','Shoes','Perfumes','Islamic Products','Home & Lifestyle','Phones & Accessories','Gifts','Groceries','Services','Other']
+              .map(c => `<option value="${esc(c)}" ${v.business_category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">Participation type *</label>
+          <select class="select" name="participation_type" required>
+            <option value="physical_stall" ${v.participation_type === 'physical_stall' ? 'selected' : ''}>Physical stall at Jalsa</option>
+            <option value="preorder_only" ${v.participation_type === 'preorder_only' ? 'selected' : ''}>Preorder only</option>
+            <option value="both" ${v.participation_type === 'both' ? 'selected' : ''}>Physical stall + preorder</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">Stall number (optional)</label>
+          <input class="input" name="stall_number" value="${esc(v.stall_number || '')}" placeholder="e.g. B12">
+        </div>
+        <div class="field">
+          <label class="label">WhatsApp phone number *</label>
+          <input class="input" name="whatsapp_number" type="tel" value="${esc(v.whatsapp_number || '')}" placeholder="0803 000 0000" required>
+        </div>
+        <div class="form-grid two">
+          <div class="field">
+            <label class="label">State</label>
+            <input class="input" name="state" value="${esc(v.state || '')}" placeholder="e.g. Lagos">
+          </div>
+          <div class="field">
+            <label class="label">District / Dila</label>
+            <input class="input" name="district" value="${esc(v.district || '')}" placeholder="e.g. Epe">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Local Jamaat</label>
+          <input class="input" name="local_jamaat" value="${esc(v.local_jamaat || '')}" placeholder="e.g. Jamaat name">
+        </div>
+        <div class="field">
+          <label class="label">Business description</label>
+          <textarea class="textarea" name="description" placeholder="Tell customers about your business and products...">${esc(v.description || '')}</textarea>
+        </div>
+        <div class="field">
+          <label class="label">Preorder details</label>
+          <textarea class="textarea" name="preorder_details" placeholder="e.g. Preorders close 3 days before Jalsa.">${esc(v.preorder_details || '')}</textarea>
+        </div>
+        <div class="field">
+          <label class="label">Collection information</label>
+          <textarea class="textarea" name="collection_info" placeholder="e.g. Collect from Stall B12, Friday–Sunday.">${esc(v.collection_info || '')}</textarea>
+        </div>
+        <div class="row" style="gap:10px;margin-top:6px">
+          <button class="btn btn-primary btn-lg" style="flex:1" type="submit">Save changes</button>
+          <a class="btn btn-ghost btn-lg" href="#/vendor">Cancel</a>
+        </div>
       </form>
     </div>
     <div style="height:30px"></div>
@@ -2442,15 +2925,30 @@ function renderVendorProfile() {
 
   $('#form-vendor-edit')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const fd = new FormData(e.target);
+    const form = e.target;
+    const btn = form.querySelector('button[type=submit]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving changes...'; }
+    const fd = new FormData(form);
     const patch = Object.fromEntries(fd.entries());
     try {
-      const { error } = await supabase.from('vendors').update(patch).eq('id', state.vendor.id);
-      if (error) throw error;
+      if (supabase && state.vendor?.id) {
+        const { error } = await supabase.from('vendors').update(patch).eq('id', state.vendor.id);
+        if (error) throw error;
+      }
       Object.assign(state.vendor, patch);
-      toast('Profile updated');
-      renderVendorProfile();
-    } catch (err) { toast(err.message, 'err'); }
+      if (LOCAL.profile) {
+        const p = LOCAL.profile;
+        p.business_name = patch.business_name;
+        LOCAL.profile = p;
+      }
+      toast('Store details updated successfully');
+      location.hash = '#/vendor';
+      await router();
+    } catch (err) {
+      toast(err.message, 'err');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+    }
   });
 
   $$('[data-upload]').forEach(input => {
@@ -2460,6 +2958,19 @@ function renderVendorProfile() {
       const kind = e.target.dataset.upload;
       const preset = kind === 'logo' ? IMG_PRESETS.logo : IMG_PRESETS.cover;
       toast('Optimising image…');
+      // If user is running in demo mode or without an authenticated Supabase session
+      if (!supabase || !state.session?.user || String(state.vendor?.id || '').startsWith('demo')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const column = kind === 'logo' ? 'logo_path' : 'cover_path';
+          state.vendor[column] = ev.target.result;
+          if (LOCAL.profile) LOCAL.profile[column] = ev.target.result;
+          toast('Image updated (local preview)');
+          renderVendorProfile();
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
       try {
         const res = await uploadImage(file, preset, state.vendor.id);
         const column = kind === 'logo' ? 'logo_path' : 'cover_path';
@@ -2468,7 +2979,22 @@ function renderVendorProfile() {
         state.vendor[column] = res.storagePath;
         toast(`Uploaded (${res.sizeKB} KB)`);
         renderVendorProfile();
-      } catch (err) { toast(err.message, 'err'); }
+      } catch (err) {
+        console.warn('Supabase storage upload error:', err);
+        const msg = String(err.message || '').toLowerCase();
+        if (msg.includes('bucket not found') || msg.includes('not found') || msg.includes('row-level security')) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const column = kind === 'logo' ? 'logo_path' : 'cover_path';
+            state.vendor[column] = ev.target.result;
+            toast(`Bucket "${preset.bucket}" not found in Supabase. Image saved as local preview.`, 'err');
+            renderVendorProfile();
+          };
+          reader.readAsDataURL(file);
+        } else {
+          toast(err.message || 'Image upload failed', 'err');
+        }
+      }
     });
   });
 }
@@ -2684,6 +3210,18 @@ document.addEventListener('click', async (e) => {
   /* ---- auth view switching ---- */
   if (action === 'auth-view') { e.preventDefault(); return renderAuth(el.dataset.view); }
 
+  if (action === 'guest-browse') {
+    e.preventDefault();
+    $('#auth').classList.add('hide');
+    $('#app').classList.remove('hide');
+    if (location.hash !== '#/home') {
+      location.hash = '#/home';
+    } else {
+      await router();
+    }
+    return;
+  }
+
   if (action === 'login-role') {
     e.preventDefault();
     state.loginRole = el.dataset.role === 'vendor' ? 'vendor' : 'user';
@@ -2700,6 +3238,7 @@ document.addEventListener('click', async (e) => {
   if (action === 'go-cart') { location.hash = '#/cart'; return; }
   if (action === 'go-me')   { location.hash = '#/me'; return; }
   if (action === 'go-explore') { location.hash = '#/explore'; return; }
+  if (action === 'edit-vendor') { location.hash = '#/vendor/profile'; return; }
   if (action === 'back') { history.length > 1 ? history.back() : (location.hash = '#/home'); return; }
   if (action === 'close-sheet') { closeSheet(); return; }
 
@@ -2719,13 +3258,32 @@ document.addEventListener('click', async (e) => {
   /* ---- saved ---- */
   if (action === 'toggle-save') {
     e.preventDefault();
-    if (!state.profile) return renderAuth('login');
+    e.stopPropagation();
+    const pid = el.dataset.id;
     try {
-      const nowSaved = await api.savedToggle(el.dataset.id);
-      nowSaved ? state.saved.add(el.dataset.id) : state.saved.delete(el.dataset.id);
-      el.classList.toggle('on', nowSaved);
-      toast(nowSaved ? 'Saved' : 'Removed from saved');
+      const nowSaved = await api.savedToggle(pid);
+      $$(`[data-action="toggle-save"][data-id="${pid}"]`).forEach(btn => {
+        btn.classList.toggle('on', nowSaved);
+        btn.setAttribute('aria-label', nowSaved ? 'Remove from saved' : 'Save product');
+      });
+      toast(nowSaved ? 'Added to saved products' : 'Removed from saved');
       if (state.route.name === 'saved') renderSaved();
+    } catch (err) { toast(err.message, 'err'); }
+    return;
+  }
+
+  /* ---- quick add to cart from product card ---- */
+  if (action === 'quick-add-cart') {
+    e.preventDefault();
+    e.stopPropagation();
+    const pid = el.dataset.id;
+    try {
+      const p = await api.product(pid);
+      if (!p || p.is_available === false) throw new Error('This product is currently unavailable.');
+      await api.addToCart(p, p.vendors, 1);
+      updateCartBadge();
+      animateCartBadge();
+      toast(`Added ${p.name} to cart`);
     } catch (err) { toast(err.message, 'err'); }
     return;
   }
@@ -2749,6 +3307,7 @@ document.addEventListener('click', async (e) => {
       if (!p || p.is_available === false) throw new Error('This product is currently unavailable.');
       await api.addToCart(p, p.vendors, qty);
       updateCartBadge();
+      animateCartBadge();
       toast(`Added ${qty} × ${p.name}`);
     } catch (err) { toast(err.message, 'err'); }
     return;
@@ -2774,8 +3333,23 @@ document.addEventListener('click', async (e) => {
     return;
   }
   if (action === 'cart-remove') {
-    try { await api.setQty(el.dataset.id, 0); renderCart(); updateCartBadge(); toast('Removed'); }
+    try { await api.setQty(el.dataset.id, 0); await renderCart(); updateCartBadge(); toast('Removed'); }
     catch (err) { toast(err.message, 'err'); }
+    return;
+  }
+  if (action === 'clear-cart') {
+    if (!confirm('Are you sure you want to remove all items from your cart?')) return;
+    try {
+      if (supabase && state.session) {
+        let { data: cart } = await supabase.from('carts').select('id').eq('customer_id', state.session.user.id).maybeSingle();
+        if (cart) await supabase.from('cart_items').delete().eq('cart_id', cart.id);
+      }
+      LOCAL.guestCart = [];
+      state.cart = [];
+      updateCartBadge();
+      await renderCart();
+      toast('Cart cleared');
+    } catch (err) { toast(err.message, 'err'); }
     return;
   }
   if (action === 'checkout-vendor') {
@@ -2806,12 +3380,15 @@ document.addEventListener('click', async (e) => {
     });
     const subtotal = lines.reduce((s, l) => s + l.line, 0);
 
+    const customerName = state.profile?.full_name || 'Customer';
+    const customerPhone = state.profile?.phone || '—';
+
     const message =
 `*Jalsa Market — Order Enquiry*
 ${vendor.business_name || 'Vendor'}${vendor.stall_number ? ` · Stall ${vendor.stall_number}` : ''}
 
-*Customer:* ${state.profile.full_name}
-*Phone:* ${state.profile.phone || '—'}
+*Customer:* ${customerName}
+*Phone:* ${customerPhone}
 
 *Items*
 ${lines.map((l, i) => `${i + 1}. ${l.name} × ${l.qty} — ${money(l.line)}`).join('\n')}
@@ -2824,7 +3401,7 @@ Sent from Jalsa Market`;
 
     api.trackWhatsApp({
       vendor_id: vendorId,
-      customer_id: state.profile.id,
+      customer_id: state.profile?.id || null,
       click_type: 'checkout',
       item_count: items.reduce((s, i) => s + i.quantity, 0),
       subtotal
@@ -2854,23 +3431,42 @@ Sent from Jalsa Market`;
 
   /* ---- admin ---- */
   if (action === 'admin-approve') {
-    await supabase.from('vendors').update({ status: 'approved', verified_at: new Date().toISOString() }).eq('id', el.dataset.id);
-    await supabase.from('vendor_verification_logs').insert({ vendor_id: el.dataset.id, action: 'approved' });
-    toast('Vendor approved');
-    renderAdmin('vendors');
+    try {
+      const { error: vErr } = await supabase.from('vendors').update({ status: 'approved', verified_at: new Date().toISOString() }).eq('id', el.dataset.id);
+      if (vErr) throw vErr;
+      await supabase.from('vendor_verification_logs').insert({ vendor_id: el.dataset.id, action: 'approved' });
+      toast('Vendor approved successfully');
+      renderAdmin('vendors');
+    } catch (err) {
+      console.error('Admin approval failed:', err);
+      toast(err.message || 'Failed to approve vendor', 'err');
+    }
     return;
   }
   if (action === 'admin-suspend') {
-    await supabase.from('vendors').update({ status: 'suspended' }).eq('id', el.dataset.id);
-    await supabase.from('vendor_verification_logs').insert({ vendor_id: el.dataset.id, action: 'suspended' });
-    toast('Vendor suspended');
-    renderAdmin('vendors');
+    try {
+      const { error: vErr } = await supabase.from('vendors').update({ status: 'suspended' }).eq('id', el.dataset.id);
+      if (vErr) throw vErr;
+      await supabase.from('vendor_verification_logs').insert({ vendor_id: el.dataset.id, action: 'suspended' });
+      toast('Vendor suspended');
+      renderAdmin('vendors');
+    } catch (err) {
+      console.error('Admin suspend failed:', err);
+      toast(err.message || 'Failed to suspend vendor', 'err');
+    }
     return;
   }
   if (action === 'admin-hide-product') {
-    await supabase.from('products').update({ is_available: el.dataset.available !== 'true' }).eq('id', el.dataset.id);
-    toast('Product updated');
-    renderAdmin('products');
+    try {
+      const nextAvailable = el.dataset.available !== 'true';
+      const { error: pErr } = await supabase.from('products').update({ is_available: nextAvailable }).eq('id', el.dataset.id);
+      if (pErr) throw pErr;
+      toast('Product updated');
+      renderAdmin('products');
+    } catch (err) {
+      console.error('Admin hide-product failed:', err);
+      toast(err.message || 'Failed to update product', 'err');
+    }
     return;
   }
   if (action === 'export-consented') {
@@ -2946,13 +3542,39 @@ async function openProductEditor(id) {
     if (!file) return;
     const bar = $('#upload-progress');
     bar.classList.remove('hide');
+
+    if (!supabase || !state.session?.user || String(state.vendor?.id || '').startsWith('demo')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        uploadedPath = ev.target.result;
+        bar.querySelector('i').style.width = '100%';
+        toast('Product image loaded (local preview)');
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
     try {
       const res = await uploadImage(file, IMG_PRESETS.product, state.vendor.id, (pct) => {
         bar.querySelector('i').style.width = pct + '%';
       });
       uploadedPath = res.storagePath;
       toast(`Image ready (${res.sizeKB} KB)`);
-    } catch (err) { toast(err.message, 'err'); }
+    } catch (err) {
+      console.warn('Product image upload error:', err);
+      const msg = String(err.message || '').toLowerCase();
+      if (msg.includes('bucket not found') || msg.includes('not found') || msg.includes('row-level security')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          uploadedPath = ev.target.result;
+          bar.querySelector('i').style.width = '100%';
+          toast('Bucket "product-images" not found in Supabase. Image saved as preview.', 'err');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast(err.message || 'Image upload failed', 'err');
+      }
+    }
   });
 
   $('#form-product')?.addEventListener('submit', async (e) => {
@@ -2999,21 +3621,52 @@ document.addEventListener('submit', async (e) => {
     const fd = new FormData(form);
     const errEl = $('#c-error');
     errEl.classList.add('hide');
+    form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+
+    const fullName = (fd.get('full_name') || '').trim();
+    const email = (fd.get('email') || '').trim().toLowerCase();
+    const phone = (fd.get('phone') || '').trim();
+
+    function showCustomerError(msg, fieldName) {
+      errEl.textContent = msg;
+      errEl.classList.remove('hide');
+      if (fieldName) {
+        const input = form.querySelector(`[name="${fieldName}"]`);
+        if (input) {
+          input.closest('.field')?.classList.add('has-error');
+          input.focus();
+        }
+      }
+      errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (!fullName) return showCustomerError('Please enter your full name.', 'full_name');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showCustomerError('Please enter a valid email address.', 'email');
+    if (!phone || phone.replace(/\D/g, '').length < 10) return showCustomerError('Please enter a valid phone number (at least 10 digits).', 'phone');
+
     const btn = form.querySelector('button[type=submit]');
     btn.disabled = true;
+    const oldText = btn.textContent;
+    btn.textContent = 'Creating Account...';
     try {
-      await customerSignup({
-        email: fd.get('email').trim(),
-        fullName: fd.get('full_name').trim(),
-        phone: fd.get('phone').trim(),
+      const res = await customerSignup({
+        email,
+        fullName,
+        phone,
         consent: fd.get('consent') === 'on'
       });
-      location.hash = '#/home';
-      await router();
+      if (res?.checkEmail) {
+        renderAuth('check-email', { email: res.email, role: 'user' });
+      } else {
+        location.hash = '#/home';
+        await router();
+      }
     } catch (err) {
-      errEl.textContent = err.message;
-      errEl.classList.remove('hide');
-    } finally { btn.disabled = false; }
+      showCustomerError(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
     return;
   }
 
@@ -3022,16 +3675,55 @@ document.addEventListener('submit', async (e) => {
     const fd = new FormData(form);
     const errEl = $('#v-error');
     errEl.classList.add('hide');
+    form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+
+    const businessName = (fd.get('business_name') || '').trim();
+    const ownerName = (fd.get('owner_name') || '').trim();
+    const email = (fd.get('email') || '').trim().toLowerCase();
+    const phone = (fd.get('phone') || '').trim();
+    const stateVal = (fd.get('state') || '').trim();
+    const district = (fd.get('district') || '').trim();
+    const localJamaat = (fd.get('local_jamaat') || '').trim();
+
+    function showVendorError(msg, fieldName) {
+      errEl.textContent = msg;
+      errEl.classList.remove('hide');
+      if (fieldName) {
+        const input = form.querySelector(`[name="${fieldName}"]`);
+        if (input) {
+          input.closest('.field')?.classList.add('has-error');
+          input.focus();
+        }
+      }
+      errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (!businessName) return showVendorError('Please enter your business name.', 'business_name');
+    if (!ownerName) return showVendorError("Please enter the owner's full name.", 'owner_name');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showVendorError('Please enter a valid email address.', 'email');
+    if (!phone || phone.replace(/\D/g, '').length < 10) return showVendorError('Please enter a valid WhatsApp number (at least 10 digits).', 'phone');
+    if (!stateVal) return showVendorError('Please enter your state.', 'state');
+    if (!district) return showVendorError('Please enter your district or dila.', 'district');
+    if (!localJamaat) return showVendorError('Please enter your local Jamaat.', 'local_jamaat');
+
     const btn = form.querySelector('button[type=submit]');
     btn.disabled = true;
+    const oldText = btn.textContent;
+    btn.textContent = 'Creating Storefront...';
     try {
-      await vendorSignup(Object.fromEntries(fd.entries()));
-      location.hash = '#/vendor';
-      await router();
+      const res = await vendorSignup(Object.fromEntries(fd.entries()));
+      if (res?.checkEmail) {
+        renderAuth('check-email', { email: res.email, role: 'vendor' });
+      } else {
+        location.hash = '#/vendor';
+        await router();
+      }
     } catch (err) {
-      errEl.textContent = err.message;
-      errEl.classList.remove('hide');
-    } finally { btn.disabled = false; }
+      showVendorError(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
     return;
   }
 
@@ -3040,21 +3732,45 @@ document.addEventListener('submit', async (e) => {
     const fd = new FormData(form);
     const errEl = $('#l-error');
     errEl.classList.add('hide');
+    form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+
+    const name = (fd.get('name') || '').trim();
+    const phone = (fd.get('phone') || '').trim();
+
+    function showLoginError(msg, fieldName) {
+      errEl.textContent = msg;
+      errEl.classList.remove('hide');
+      if (fieldName) {
+        const input = form.querySelector(`[name="${fieldName}"]`);
+        if (input) {
+          input.closest('.field')?.classList.add('has-error');
+          input.focus();
+        }
+      }
+      errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (!name) return showLoginError(state.loginRole === 'vendor' ? 'Please enter your business name.' : 'Please enter your name.', 'name');
+    if (!phone) return showLoginError('Please enter your phone number.', 'phone');
+
     const btn = form.querySelector('button[type=submit]');
     btn.disabled = true;
+    const oldText = btn.textContent;
+    btn.textContent = 'Signing in...';
     try {
       await loginByNameAndPhone(
         state.loginRole,
-        fd.get('name').trim(),
-        fd.get('phone').trim()
+        name,
+        phone
       );
+      toast(`Welcome back, ${state.profile?.full_name || name}!`);
       location.hash = state.loginRole === 'vendor' ? '#/vendor' : '#/home';
       await router();
     } catch (err) {
-      errEl.textContent = err.message;
-      errEl.classList.remove('hide');
+      showLoginError(err.message);
     } finally {
       btn.disabled = false;
+      btn.textContent = oldText;
     }
     return;
   }
@@ -3080,6 +3796,19 @@ async function boot() {
     return;
   }
 
+  // Handle Supabase auth error redirected in URL hash (e.g. expired link)
+  if (location.hash && (location.hash.includes('error=') || location.hash.includes('error_code='))) {
+    try {
+      const params = new URLSearchParams(location.hash.replace(/^#/, ''));
+      const desc = params.get('error_description') || params.get('error') || 'The sign-in link is invalid or expired.';
+      const cleanDesc = decodeURIComponent(desc.replace(/\+/g, ' '));
+      history.replaceState(null, '', location.pathname);
+      setTimeout(() => {
+        toast(cleanDesc, 'err');
+      }, 500);
+    } catch (_) {}
+  }
+
   // Splash
   await new Promise(r => setTimeout(r, CONFIG.SPLASH_MS));
   $('#splash').classList.add('gone');
@@ -3097,7 +3826,19 @@ async function boot() {
     $('#app').classList.remove('hide');
     await router();
   } else {
-    renderAuth('login');
+    state.cart = LOCAL.guestCart;
+    state.saved = new Set(LOCAL.saved);
+    updateCartBadge();
+    updateSavedBadge();
+    const r = parseRoute();
+    const guestAllowed = ['home', 'explore', 'product', 'store', 'saved', 'cart', 'me', 'settings', 'privacy'];
+    if (location.hash && guestAllowed.includes(r.name)) {
+      $('#auth').classList.add('hide');
+      $('#app').classList.remove('hide');
+      await router();
+    } else {
+      renderAuth('login');
+    }
   }
 
   state.booted = true;
@@ -3111,6 +3852,53 @@ async function boot() {
 window.addEventListener('hashchange', () => { if (state.booted) router(); });
 window.addEventListener('online', () => toast('Back online'));
 window.addEventListener('offline', () => toast('You are offline — showing cached content', 'err'));
+
+/* ------------------------------------------------------------
+   22. PWA INSTALL BANNER
+   ------------------------------------------------------------ */
+(function pwaBanner() {
+  const DISMISS_KEY = 'jalsa.pwa.dismissed';
+  let deferredPrompt = null;
+  const banner = document.getElementById('pwa-banner');
+  const installBtn = document.getElementById('pwa-install-btn');
+  const cancelBtn  = document.getElementById('pwa-cancel-btn');
+
+  // Don't show if user already dismissed or app is already installed (standalone)
+  const alreadyDismissed = localStorage.getItem(DISMISS_KEY);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                    || window.navigator.standalone === true;
+
+  if (alreadyDismissed || isStandalone) return;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show banner after a short delay so it doesn't pop up immediately on load
+    setTimeout(() => { banner.classList.remove('hide'); }, 4000);
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    banner.classList.add('hide');
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (outcome === 'accepted') {
+      localStorage.setItem(DISMISS_KEY, '1');
+    }
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    banner.classList.add('hide');
+    localStorage.setItem(DISMISS_KEY, '1');
+  });
+
+  // Also hide the banner if the app gets installed later
+  window.addEventListener('appinstalled', () => {
+    banner.classList.add('hide');
+    localStorage.setItem(DISMISS_KEY, '1');
+  });
+})();
 
 boot();
 </script>
