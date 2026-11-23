@@ -239,29 +239,203 @@ create policy "User manage cart items" on public.cart_items
 create policy "Authenticated log consent" on public.user_consents
   for insert with check (auth.uid() = user_id);
 
+-- ============================================================
+-- ADMIN ROLE, SECURITY DEFINER & RLS POLICIES
+-- ============================================================
+
+-- Function to safely verify if the current authenticated caller is an admin
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.admin_users where user_id = auth.uid()
+  );
+$$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to anon, authenticated;
+
+-- Enable RLS on admin-relevant tables
+alter table public.admin_users enable row level security;
+alter table public.vendor_verification_logs enable row level security;
+alter table public.platform_settings enable row level security;
+
+-- Policies for admin_users
+create policy "Users can check own admin status" on public.admin_users
+  for select using (auth.uid() = user_id);
+
+create policy "Admins can view all admin users" on public.admin_users
+  for select using (public.is_admin());
+
+-- Admin policies for vendors
+create policy "Admins can view all vendors" on public.vendors
+  for select using (public.is_admin());
+
+create policy "Admins can update all vendors" on public.vendors
+  for update using (public.is_admin());
+
+-- Admin policies for vendor verification logs
+create policy "Admins can view verification logs" on public.vendor_verification_logs
+  for select using (public.is_admin());
+
+create policy "Admins can insert verification logs" on public.vendor_verification_logs
+  for insert with check (public.is_admin());
+
+-- Admin policies for products
+create policy "Admins can view all products" on public.products
+  for select using (public.is_admin());
+
+create policy "Admins can update all products" on public.products
+  for update using (public.is_admin());
+
+-- Admin policies for product images
+create policy "Admins can manage product images" on public.product_images
+  for all using (public.is_admin());
+
+-- Admin policies for profiles (allows admin dashboard customer counts & marketing exports)
+create policy "Admins can view all profiles" on public.profiles
+  for select using (public.is_admin());
+
+-- Admin policies for reports
+create policy "Admins can manage reports" on public.reports
+  for all using (public.is_admin());
+
+create policy "Authenticated can insert reports" on public.reports
+  for insert with check (auth.role() = 'authenticated');
+
+-- Admin policies for categories, events, announcements
+create policy "Admins can manage categories" on public.categories
+  for all using (public.is_admin());
+
+create policy "Admins can manage events" on public.events
+  for all using (public.is_admin());
+
+create policy "Admins can manage announcements" on public.announcements
+  for all using (public.is_admin());
+
+-- Admin policies for platform settings
+create policy "Admins can manage platform settings" on public.platform_settings
+  for all using (public.is_admin());
+
+create policy "Public can read platform settings" on public.platform_settings
+  for select using (true);
+
+-- Helper procedure to easily grant admin role by email (run from Supabase SQL Editor)
+create or replace function public.seed_admin_by_email(p_email text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target_user_id uuid;
+begin
+  select id into target_user_id from auth.users where lower(email) = lower(trim(p_email));
+  if target_user_id is null then
+    return 'User with email "' || p_email || '" not found in auth.users. Please sign up or log in first.';
+  end if;
+
+  insert into public.admin_users (user_id)
+  values (target_user_id)
+  on conflict (user_id) do nothing;
+
+  return 'Success: ' || p_email || ' (User ID: ' || target_user_id || ') is now an Administrator.';
+end;
+$$;
+
+-- Direct login authentication without sending an email OTP on sign in
+create or replace function public.jalsa_authenticate_login(
+  p_role text,
+  p_name text,
+  p_phone text
+)
+returns table (
+  id uuid,
+  full_name text,
+  email text,
+  phone text,
+  is_vendor boolean,
+  auth_token text
+)
+language plpgsql
+security definer
+set search_path = public, auth, extensions
+as $$
+declare
+  v_user_id uuid;
+  v_email text;
+  v_full_name text;
+  v_phone text;
+  v_is_vendor boolean;
+  v_pass text;
+begin
+  if p_role = 'vendor' then
+    select p.id, p.full_name, p.email, p.phone, coalesce(p.is_vendor, true)
+    into v_user_id, v_full_name, v_email, v_phone, v_is_vendor
+    from public.profiles p
+    join public.vendors v on v.owner_id = p.id
+    where (lower(trim(v.whatsapp_number)) = lower(trim(p_phone)) or lower(trim(p.phone)) = lower(trim(p_phone)))
+      and (lower(trim(v.business_name)) = lower(trim(p_name)) or lower(trim(p.full_name)) = lower(trim(p_name)))
+    limit 1;
+  else
+    select p.id, p.full_name, p.email, p.phone, coalesce(p.is_vendor, false)
+    into v_user_id, v_full_name, v_email, v_phone, v_is_vendor
+    from public.profiles p
+    where lower(trim(p.phone)) = lower(trim(p_phone))
+      and lower(trim(p.full_name)) = lower(trim(p_name))
+    limit 1;
+  end if;
+
+  if v_user_id is null then
+    return;
+  end if;
+
+  -- Deterministic password for direct password sign-in (never triggers email service)
+  v_pass := 'Jalsa@' || replace(v_user_id::text, '-', '');
+
+  -- Ensure the user has this password set in auth.users
+  update auth.users
+  set encrypted_password = crypt(v_pass, gen_salt('bf'))
+  where auth.users.id = v_user_id;
+
+  return query select v_user_id, v_full_name, v_email, v_phone, v_is_vendor, v_pass;
+end;
+$$;
+
+revoke all on function public.jalsa_authenticate_login(text, text, text) from public;
+grant execute on function public.jalsa_authenticate_login(text, text, text) to anon, authenticated;
+
 create or replace function public.jalsa_lookup_login(
   p_role text,
   p_name text,
   p_phone text
 )
-returns table (email text)
+returns table (
+  id uuid,
+  email text,
+  full_name text,
+  phone text,
+  is_vendor boolean
+)
 language sql
 security definer
 set search_path = public
 as $$
-  select p.email
+  select p.id, p.email, p.full_name, p.phone, coalesce(p.is_vendor, false)
   from public.profiles p
-  where p.email is not null
-    and p.phone = p_phone
+  where lower(trim(p.phone)) = lower(trim(p_phone))
     and (
-      (p_role = 'user' and p.full_name = p_name and coalesce(p.is_vendor, false) = false)
+      (p_role = 'user' and lower(trim(p.full_name)) = lower(trim(p_name)))
       or
       (p_role = 'vendor' and exists (
         select 1
         from public.vendors v
         where v.owner_id = p.id
-          and v.business_name = p_name
-          and v.whatsapp_number = p_phone
+          and lower(trim(v.business_name)) = lower(trim(p_name))
       ))
     )
   limit 1;
@@ -269,3 +443,58 @@ $$;
 
 revoke all on function public.jalsa_lookup_login(text, text, text) from public;
 grant execute on function public.jalsa_lookup_login(text, text, text) to anon, authenticated;
+
+-- ============================================================
+-- STORAGE BUCKETS & POLICIES
+-- ============================================================
+insert into storage.buckets (id, name, public)
+values
+  ('vendor-logos', 'vendor-logos', true),
+  ('store-covers', 'store-covers', true),
+  ('product-images', 'product-images', true)
+on conflict (id) do update set public = true;
+
+-- Public read access for images
+create policy "Public view vendor-logos"
+  on storage.objects for select
+  using (bucket_id = 'vendor-logos');
+
+create policy "Public view store-covers"
+  on storage.objects for select
+  using (bucket_id = 'store-covers');
+
+create policy "Public view product-images"
+  on storage.objects for select
+  using (bucket_id = 'product-images');
+
+-- Authenticated upload access
+create policy "Authenticated upload vendor-logos"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'vendor-logos');
+
+create policy "Authenticated upload store-covers"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'store-covers');
+
+create policy "Authenticated upload product-images"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'product-images');
+
+-- Authenticated update access
+create policy "Authenticated update vendor-logos"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'vendor-logos');
+
+create policy "Authenticated update store-covers"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'store-covers');
+
+create policy "Authenticated update product-images"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'product-images');
