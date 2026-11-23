@@ -1,0 +1,3118 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-textsize="md">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Jalsa Market — Discover. Connect. Shop at Jalsa.</title>
+<meta name="description" content="Jalsa Market — the year-round marketplace for Jalsa vendors and customers. Discover vendors, browse products, preorder and connect on WhatsApp." />
+<meta name="theme-color" content="#101310" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" href="./jalsa%20logo.png" type="image/png" />
+<link rel="apple-touch-icon" href="./icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<style>
+/* ============================================================
+   1. DESIGN TOKENS
+   ============================================================ */
+:root{
+  --bg:#101310; --bg2:#191E1A; --surface:#222823; --surface2:#2A312B;
+  --green:#23864B; --green-hi:#2C9E5A; --green-soft:rgba(35,134,75,.14);
+  --text:#FFFFFF; --muted:#A0A7A1; --border:#2C332D; --border-soft:#242A25;
+  --danger:#C4453B; --danger-soft:rgba(196,69,59,.12);
+  --warn:#C9922E; --warn-soft:rgba(201,146,46,.13);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.28);
+  --radius:16px; --radius-sm:10px; --radius-lg:22px;
+  --maxw:1180px;
+  --font-body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-display:'Instrument Serif',Georgia,'Times New Roman',serif;
+  --header-h:60px; --tabbar-h:64px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+html[data-theme="light"]{
+  --bg:#FFFFFF; --bg2:#F5F7F5; --surface:#FFFFFF; --surface2:#F0F3F0;
+  --text:#171B18; --muted:#68716A; --border:#E6EAE6; --border-soft:#EFF2EF;
+  --green-soft:rgba(35,134,75,.10);
+  --shadow:0 1px 2px rgba(16,19,16,.05), 0 8px 24px rgba(16,19,16,.06);
+}
+html[data-textsize="lg"]{ font-size:17.5px; }
+html[data-textsize="xl"]{ font-size:19px; }
+html{ font-size:16px; -webkit-text-size-adjust:100%; }
+
+/* ============================================================
+   2. RESET / BASE
+   ============================================================ */
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--font-body); font-size:.95rem; line-height:1.55;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  overscroll-behavior-y:none;
+  transition:background .25s var(--ease), color .25s var(--ease);
+}
+img{ max-width:100%; display:block; }
+button,input,select,textarea{ font:inherit; color:inherit; }
+button{ background:none; border:0; cursor:pointer; padding:0; }
+a{ color:inherit; text-decoration:none; }
+h1,h2,h3,h4{ margin:0; font-weight:600; letter-spacing:-.015em; }
+p{ margin:0; }
+::selection{ background:var(--green-soft); }
+:focus-visible{ outline:2px solid var(--green); outline-offset:2px; border-radius:6px; }
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-thumb{ background:var(--border); border-radius:8px; }
+::-webkit-scrollbar-track{ background:transparent; }
+
+/* ============================================================
+   3. TYPE
+   ============================================================ */
+.display{ font-family:var(--font-display); font-weight:400; letter-spacing:-.01em; line-height:1.1; }
+.section-title{ font-size:1.06rem; font-weight:600; letter-spacing:-.02em; }
+.sub{ color:var(--muted); font-size:.82rem; }
+.tiny{ font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; font-weight:600; color:var(--muted); }
+
+/* ============================================================
+   4. LAYOUT
+   ============================================================ */
+.container{ width:100%; max-width:var(--maxw); margin:0 auto; padding:0 18px; }
+.section{ padding:22px 0 6px; }
+.section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.section-head .link{ font-size:.82rem; color:var(--green); font-weight:600; white-space:nowrap; }
+.stack{ display:flex; flex-direction:column; gap:14px; }
+.row{ display:flex; align-items:center; gap:10px; }
+.row-between{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.hide{ display:none !important; }
+
+/* ============================================================
+   5. BUTTONS
+   ============================================================ */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  height:44px; padding:0 18px; border-radius:12px; font-size:.86rem; font-weight:600;
+  border:1px solid var(--border); background:var(--surface); color:var(--text);
+  transition:transform .12s var(--ease), background .18s var(--ease), border-color .18s var(--ease), opacity .18s;
+  white-space:nowrap; user-select:none;
+}
+.btn:active{ transform:scale(.975); }
+.btn[disabled]{ opacity:.5; pointer-events:none; }
+.btn-primary{ background:var(--green); border-color:var(--green); color:#fff; }
+.btn-primary:hover{ background:var(--green-hi); border-color:var(--green-hi); }
+.btn-ghost{ background:transparent; border-color:var(--border); }
+.btn-ghost:hover{ background:var(--surface); }
+.btn-danger{ background:var(--danger-soft); border-color:transparent; color:#E0705F; }
+.btn-block{ width:100%; }
+.btn-sm{ height:36px; padding:0 13px; font-size:.79rem; border-radius:10px; }
+.btn-lg{ height:50px; font-size:.92rem; border-radius:14px; }
+
+.icon-btn{
+  width:40px; height:40px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center;
+  color:var(--text); position:relative; transition:background .18s var(--ease);
+}
+.icon-btn:hover{ background:var(--surface); }
+.icon-btn svg{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ============================================================
+   6. SPLASH
+   ============================================================ */
+#splash{
+  position:fixed; inset:0; z-index:9000; display:grid; place-items:center;
+  background:#101310; transition:opacity .55s var(--ease), visibility .55s;
+}
+#splash.gone{ opacity:0; visibility:hidden; }
+.splash-inner{ display:flex; flex-direction:column; align-items:center; gap:20px; }
+.splash-mark{ width:88px; height:88px; animation:breathe 2.6s var(--ease) infinite; }
+.splash-word{ font-family:var(--font-display); font-size:1.9rem; color:#fff; letter-spacing:.01em; }
+.splash-tag{ font-size:.72rem; letter-spacing:.22em; text-transform:uppercase; color:#6E7A70; font-weight:600; }
+.splash-dots{ display:flex; gap:5px; margin-top:6px; }
+.splash-dots i{ width:5px; height:5px; border-radius:50%; background:#2C9E5A; opacity:.35; animation:dot 1.4s ease-in-out infinite; }
+.splash-dots i:nth-child(2){ animation-delay:.18s; }
+.splash-dots i:nth-child(3){ animation-delay:.36s; }
+@keyframes breathe{ 0%,100%{ transform:scale(1); opacity:.92 } 50%{ transform:scale(1.055); opacity:1 } }
+@keyframes dot{ 0%,100%{ opacity:.25; transform:translateY(0) } 50%{ opacity:1; transform:translateY(-3px) } }
+
+/* ============================================================
+   7. AUTH / WELCOME
+   ============================================================ */
+#auth{ min-height:100dvh; display:flex; flex-direction:column; }
+.auth-hero{ padding:44px 0 26px; text-align:center; }
+.auth-hero .mark{ width:60px; height:60px; margin:0 auto 18px; }
+.auth-hero h1{ font-family:var(--font-display); font-size:2.1rem; font-weight:400; line-height:1.08; }
+.auth-hero p{ color:var(--muted); font-size:.9rem; margin-top:10px; max-width:32ch; margin-inline:auto; }
+.auth-body{ flex:1; padding-bottom:34px; }
+.choice{
+  display:flex; align-items:center; gap:14px; width:100%; text-align:left;
+  padding:18px; border-radius:var(--radius); border:1px solid var(--border);
+  background:var(--surface); transition:border-color .18s var(--ease), transform .12s var(--ease), background .18s;
+}
+.choice:hover{ border-color:var(--green); }
+.choice:active{ transform:scale(.99); }
+.choice .ico{ width:44px; height:44px; border-radius:12px; background:var(--green-soft); display:grid; place-items:center; flex:0 0 auto; }
+.choice .ico svg{ width:22px; height:22px; stroke:var(--green); fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.choice h3{ font-size:.98rem; }
+.choice p{ color:var(--muted); font-size:.79rem; margin-top:2px; }
+.choice .arrow{ margin-left:auto; color:var(--muted); }
+
+/* ============================================================
+   8. FORMS
+   ============================================================ */
+.field{ display:flex; flex-direction:column; gap:7px; }
+.label{ font-size:.78rem; font-weight:600; color:var(--muted); letter-spacing:.01em; }
+.input,.select,.textarea{
+  width:100%; background:var(--bg2); border:1px solid var(--border); color:var(--text);
+  border-radius:12px; padding:12px 14px; font-size:.9rem; transition:border-color .18s var(--ease), background .18s;
+  -webkit-appearance:none; appearance:none;
+}
+html[data-theme="light"] .input,html[data-theme="light"] .select,html[data-theme="light"] .textarea{ background:#fff; }
+.input::placeholder,.textarea::placeholder{ color:var(--muted); opacity:.72; }
+.input:focus,.select:focus,.textarea:focus{ outline:none; border-color:var(--green); background:var(--surface); }
+.textarea{ min-height:96px; resize:vertical; line-height:1.55; }
+.select{ background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23A0A7A1' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:40px; }
+.form-grid{ display:grid; gap:14px; }
+@media(min-width:640px){ .form-grid.two{ grid-template-columns:1fr 1fr; } }
+.check{ display:flex; align-items:flex-start; gap:11px; cursor:pointer; padding:12px 0; }
+.check input{ appearance:none; width:20px; height:20px; flex:0 0 auto; border:1.5px solid var(--border); border-radius:6px; background:var(--bg2); margin:1px 0 0; position:relative; cursor:pointer; transition:.18s var(--ease); }
+.check input:checked{ background:var(--green); border-color:var(--green); }
+.check input:checked::after{ content:''; position:absolute; left:6px; top:2px; width:5px; height:10px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(43deg); }
+.check span{ font-size:.82rem; color:var(--muted); line-height:1.5; }
+.field-error{ color:#E0705F; font-size:.76rem; }
+
+/* ============================================================
+   9. APP SHELL
+   ============================================================ */
+#app{ min-height:100dvh; display:flex; flex-direction:column; padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+.app-header{
+  position:sticky; top:0; z-index:100; background:color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter:saturate(180%) blur(16px); -webkit-backdrop-filter:saturate(180%) blur(16px);
+  border-bottom:1px solid var(--border-soft);
+}
+.header-inner{ height:var(--header-h); display:flex; align-items:center; gap:10px; }
+.brand{ display:flex; align-items:center; gap:9px; min-width:0; }
+.brand .mark{ width:30px; height:30px; flex:0 0 auto; }
+.brand-text{ display:flex; flex-direction:column; min-width:0; }
+.brand-name{ font-size:.9rem; font-weight:700; letter-spacing:-.02em; line-height:1.15; }
+.brand-greet{ font-size:.71rem; color:var(--muted); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.header-actions{ margin-left:auto; display:flex; align-items:center; gap:2px; }
+.cart-dot{
+  position:absolute; top:4px; right:4px; min-width:17px; height:17px; padding:0 4px; border-radius:9px;
+  background:var(--green); color:#fff; font-size:.63rem; font-weight:700; display:grid; place-items:center; line-height:1;
+}
+.avatar{
+  width:32px; height:32px; border-radius:50%; background:var(--green-soft); color:var(--green);
+  display:grid; place-items:center; font-size:.78rem; font-weight:700; flex:0 0 auto;
+}
+
+/* Tab bar */
+.tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:120;
+  height:calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  background:color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-top:1px solid var(--border-soft);
+  display:flex; align-items:stretch;
+}
+.tab{
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  color:var(--muted); font-size:.63rem; font-weight:600; letter-spacing:.01em; position:relative;
+  transition:color .18s var(--ease); padding:0 2px;
+}
+.tab svg{ width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; transition:transform .18s var(--ease); }
+.tab.active{ color:var(--green); }
+.tab.active svg{ transform:translateY(-1px); }
+.tab .tab-badge{
+  position:absolute; top:8px; left:calc(50% + 6px); min-width:16px; height:16px; padding:0 4px;
+  border-radius:8px; background:var(--green); color:#fff; font-size:.6rem; font-weight:700; display:grid; place-items:center;
+}
+@media(min-width:900px){
+  #app{ padding-bottom:0; }
+  .tabbar{ position:sticky; top:0; order:-1; height:auto; border-top:0; border-bottom:1px solid var(--border-soft); padding:0; backdrop-filter:none; background:var(--bg); }
+  .tabbar{ max-width:none; }
+  .tabbar-wrap{ width:100%; max-width:var(--maxw); margin:0 auto; display:flex; padding:0 18px; gap:4px; }
+  .tab{ flex:0 0 auto; flex-direction:row; gap:8px; height:52px; padding:0 14px; font-size:.82rem; }
+  .tab .tab-badge{ position:static; margin-left:2px; }
+  .tab.active{ color:var(--green); }
+}
+
+/* ============================================================
+   10. SEARCH
+   ============================================================ */
+.searchbar{ position:relative; }
+.searchbar svg{ position:absolute; left:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; stroke:var(--muted); fill:none; stroke-width:1.8; stroke-linecap:round; pointer-events:none; }
+.searchbar input{
+  width:100%; height:46px; padding:0 16px 0 42px; border-radius:14px;
+  background:var(--surface); border:1px solid var(--border); color:var(--text); font-size:.88rem;
+  transition:border-color .18s var(--ease);
+}
+.searchbar input::placeholder{ color:var(--muted); opacity:.8; }
+.searchbar input:focus{ outline:none; border-color:var(--green); }
+
+/* ============================================================
+   11. BANNERS
+   ============================================================ */
+.event-banner{
+  border:1px solid var(--border); border-radius:var(--radius); padding:15px 16px;
+  background:linear-gradient(135deg, var(--green-soft), transparent 62%), var(--surface);
+  display:flex; align-items:center; gap:14px;
+}
+.event-banner .eb-body{ min-width:0; flex:1; }
+.event-banner h4{ font-size:.9rem; }
+.event-banner p{ font-size:.76rem; color:var(--muted); margin-top:2px; }
+.countdown{ display:flex; gap:6px; margin-top:10px; }
+.countdown div{ background:var(--bg2); border:1px solid var(--border); border-radius:9px; padding:5px 9px; text-align:center; min-width:44px; }
+.countdown b{ display:block; font-size:.92rem; font-weight:700; line-height:1.1; }
+.countdown small{ font-size:.57rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.notice{
+  display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:12px;
+  background:var(--warn-soft); color:#DCA94B; font-size:.79rem; line-height:1.5;
+}
+.notice.info{ background:var(--green-soft); color:var(--green); }
+.notice svg{ width:17px; height:17px; flex:0 0 auto; margin-top:1px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; }
+
+/* ============================================================
+   12. CATEGORIES
+   ============================================================ */
+.cat-row{ display:flex; gap:9px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; -ms-overflow-style:none; }
+.cat-row::-webkit-scrollbar{ display:none; }
+.cat-chip{
+  flex:0 0 auto; display:flex; align-items:center; gap:8px; height:40px; padding:0 15px;
+  border-radius:11px; border:1px solid var(--border); background:var(--surface);
+  font-size:.81rem; font-weight:500; white-space:nowrap; transition:.18s var(--ease);
+}
+.cat-chip:hover{ border-color:var(--green); }
+.cat-chip.active{ background:var(--green); border-color:var(--green); color:#fff; font-weight:600; }
+
+/* ============================================================
+   13. HORIZONTAL SCROLLERS
+   ============================================================ */
+.hscroll{ display:flex; gap:13px; overflow-x:auto; padding:2px 0 8px; scroll-snap-type:x mandatory; scrollbar-width:none; -ms-overflow-style:none; }
+.hscroll::-webkit-scrollbar{ display:none; }
+.hscroll > *{ scroll-snap-align:start; }
+
+.vendor-card{
+  flex:0 0 232px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;
+  background:var(--surface); transition:border-color .2s var(--ease), transform .14s var(--ease);
+}
+.vendor-card:hover{ border-color:var(--green); }
+.vendor-card:active{ transform:scale(.99); }
+.vc-media{ height:92px; background:var(--bg2); position:relative; overflow:hidden; }
+.vc-media img{ width:100%; height:100%; object-fit:cover; }
+.vc-logo{
+  position:absolute; left:14px; bottom:-19px; width:44px; height:44px; border-radius:12px;
+  border:2px solid var(--surface); background:var(--bg2); object-fit:cover; overflow:hidden;
+  display:grid; place-items:center; font-weight:700; color:var(--green); font-size:.9rem;
+}
+.vc-body{ padding:25px 14px 14px; }
+.vc-body h4{ font-size:.88rem; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vc-meta{ font-size:.72rem; color:var(--muted); margin-top:3px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+
+/* ============================================================
+   14. PRODUCT GRID
+   ============================================================ */
+.product-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:13px; }
+@media(min-width:600px){ .product-grid{ grid-template-columns:repeat(3,1fr); } }
+@media(min-width:900px){ .product-grid{ grid-template-columns:repeat(4,1fr); gap:16px; } }
+
+.product-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; position:relative; transition:border-color .2s var(--ease), transform .14s var(--ease); display:flex; flex-direction:column; }
+.product-card:hover{ border-color:color-mix(in srgb, var(--green) 55%, var(--border)); }
+.product-card:active{ transform:scale(.993); }
+.p-media{ aspect-ratio:1/1; background:var(--bg2); position:relative; overflow:hidden; }
+.p-media img{ width:100%; height:100%; object-fit:cover; transition:transform .45s var(--ease); }
+.product-card:hover .p-media img{ transform:scale(1.035); }
+.p-media .ph{ width:100%; height:100%; display:grid; place-items:center; color:var(--border); }
+.p-media .ph svg{ width:34px; height:34px; stroke:currentColor; fill:none; stroke-width:1.4; }
+.p-save{
+  position:absolute; top:8px; right:8px; width:31px; height:31px; border-radius:9px;
+  background:color-mix(in srgb, var(--bg) 72%, transparent); backdrop-filter:blur(8px);
+  display:grid; place-items:center; color:#fff; transition:.18s var(--ease);
+}
+.p-save svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linejoin:round; }
+.p-save.on svg{ fill:var(--green); stroke:var(--green); }
+.p-flag{
+  position:absolute; top:8px; left:8px; padding:3px 8px; border-radius:7px; font-size:.62rem;
+  font-weight:700; letter-spacing:.03em; text-transform:uppercase; background:var(--green); color:#fff;
+}
+.p-flag.pre{ background:#8A6A1E; }
+.p-flag.out{ background:var(--danger); }
+.p-body{ padding:11px 12px 13px; display:flex; flex-direction:column; gap:3px; flex:1; }
+.p-name{ font-size:.83rem; font-weight:500; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.2em; }
+.p-price{ font-size:.92rem; font-weight:700; letter-spacing:-.02em; margin-top:auto; padding-top:5px; }
+.p-vendor{ font-size:.71rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ============================================================
+   15. PANELS / CARDS
+   ============================================================ */
+.panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+.panel + .panel{ margin-top:12px; }
+.list{ display:flex; flex-direction:column; }
+.list-item{
+  display:flex; align-items:center; gap:13px; padding:14px 16px; background:var(--surface);
+  border:1px solid var(--border); border-radius:14px; margin-bottom:9px; transition:border-color .18s var(--ease);
+}
+.list-item:hover{ border-color:color-mix(in srgb, var(--green) 45%, var(--border)); }
+.list-item .li-ico{ width:36px; height:36px; border-radius:10px; background:var(--bg2); display:grid; place-items:center; flex:0 0 auto; }
+.list-item .li-ico svg{ width:18px; height:18px; stroke:var(--muted); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.list-item .li-body{ flex:1; min-width:0; }
+.list-item h4{ font-size:.86rem; font-weight:600; }
+.list-item p{ font-size:.75rem; color:var(--muted); margin-top:1px; }
+.list-item .li-arrow{ color:var(--muted); flex:0 0 auto; }
+
+.status{ display:inline-flex; align-items:center; gap:5px; font-size:.68rem; font-weight:700; padding:3px 9px; border-radius:20px; letter-spacing:.02em; text-transform:capitalize; }
+.status::before{ content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.status.approved{ background:var(--green-soft); color:#3FBF77; }
+.status.pending{ background:var(--warn-soft); color:#DCA94B; }
+.status.rejected,.status.suspended{ background:var(--danger-soft); color:#E0705F; }
+
+/* Stats */
+.stat-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:11px; }
+@media(min-width:700px){ .stat-grid{ grid-template-columns:repeat(4,1fr); } }
+.stat{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:15px; }
+.stat b{ display:block; font-size:1.35rem; font-weight:700; letter-spacing:-.03em; line-height:1.15; }
+.stat span{ font-size:.71rem; color:var(--muted); display:block; margin-top:2px; }
+
+/* ============================================================
+   16. EMPTY STATES
+   ============================================================ */
+.empty{ text-align:center; padding:46px 22px; }
+.empty .e-ico{ width:56px; height:56px; border-radius:16px; background:var(--surface); border:1px solid var(--border); display:grid; place-items:center; margin:0 auto 16px; }
+.empty .e-ico svg{ width:25px; height:25px; stroke:var(--muted); fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.empty h3{ font-size:.96rem; }
+.empty p{ color:var(--muted); font-size:.81rem; margin-top:6px; max-width:34ch; margin-inline:auto; line-height:1.6; }
+.empty .btn{ margin-top:18px; }
+
+/* ============================================================
+   17. CART
+   ============================================================ */
+.cart-group{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:13px; }
+.cg-head{ display:flex; align-items:center; gap:10px; padding:13px 15px; border-bottom:1px solid var(--border-soft); }
+.cg-head h4{ font-size:.84rem; font-weight:600; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cg-item{ display:flex; gap:12px; padding:13px 15px; border-bottom:1px solid var(--border-soft); }
+.cg-item:last-of-type{ border-bottom:0; }
+.cg-thumb{ width:60px; height:60px; border-radius:11px; background:var(--bg2); overflow:hidden; flex:0 0 auto; }
+.cg-thumb img{ width:100%; height:100%; object-fit:cover; }
+.cg-info{ flex:1; min-width:0; }
+.cg-info h5{ margin:0; font-size:.82rem; font-weight:500; line-height:1.35; }
+.cg-info .pr{ font-size:.82rem; font-weight:700; margin-top:3px; }
+.qty{ display:inline-flex; align-items:center; border:1px solid var(--border); border-radius:9px; overflow:hidden; margin-top:8px; }
+.qty button{ width:28px; height:28px; display:grid; place-items:center; color:var(--muted); font-size:.95rem; }
+.qty button:hover{ background:var(--bg2); color:var(--text); }
+.qty span{ min-width:28px; text-align:center; font-size:.79rem; font-weight:600; }
+.cg-foot{ padding:13px 15px; background:var(--bg2); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.cg-foot .sub-total{ font-size:.79rem; color:var(--muted); }
+.cg-foot .sub-total b{ color:var(--text); font-size:.94rem; font-weight:700; margin-left:5px; }
+.cart-summary{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+.cart-summary .row-between{ padding:7px 0; font-size:.84rem; }
+.cart-summary .total{ border-top:1px solid var(--border); margin-top:8px; padding-top:13px; font-size:1rem; font-weight:700; }
+
+/* ============================================================
+   18. DETAIL PAGE
+   ============================================================ */
+.detail-media{ background:var(--bg2); border-radius:var(--radius); overflow:hidden; aspect-ratio:1/1; }
+.detail-media img{ width:100%; height:100%; object-fit:cover; }
+.detail-thumbs{ display:flex; gap:8px; margin-top:10px; overflow-x:auto; scrollbar-width:none; }
+.detail-thumbs::-webkit-scrollbar{ display:none; }
+.detail-thumbs button{ flex:0 0 56px; height:56px; border-radius:10px; overflow:hidden; border:1.5px solid var(--border); opacity:.62; transition:.18s var(--ease); }
+.detail-thumbs button.on{ border-color:var(--green); opacity:1; }
+.detail-thumbs img{ width:100%; height:100%; object-fit:cover; }
+.price-lg{ font-family:var(--font-display); font-size:2rem; font-weight:400; letter-spacing:-.01em; }
+.detail-grid{ display:grid; gap:26px; }
+@media(min-width:860px){ .detail-grid{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:38px; align-items:start; } .detail-media-wrap{ position:sticky; top:calc(var(--header-h) + 16px); } }
+.sticky-actions{ position:sticky; bottom:calc(var(--tabbar-h) + 12px); z-index:50; }
+@media(min-width:900px){ .sticky-actions{ position:static; } }
+
+/* Storefront */
+.store-cover{ height:170px; background:var(--bg2); border-radius:var(--radius); overflow:hidden; position:relative; }
+.store-cover img{ width:100%; height:100%; object-fit:cover; }
+@media(min-width:760px){ .store-cover{ height:230px; } }
+.store-head{ display:flex; gap:16px; margin-top:-34px; padding:0 6px; align-items:flex-end; flex-wrap:wrap; }
+.store-logo{ width:80px; height:80px; border-radius:18px; border:3px solid var(--bg); background:var(--surface); overflow:hidden; display:grid; place-items:center; font-family:var(--font-display); font-size:1.9rem; color:var(--green); flex:0 0 auto; }
+.store-logo img{ width:100%; height:100%; object-fit:cover; }
+.store-title{ flex:1; min-width:200px; padding-bottom:6px; }
+.store-title h1{ font-family:var(--font-display); font-size:1.6rem; font-weight:400; line-height:1.15; }
+
+/* ============================================================
+   19. MODAL / SHEET / TOAST
+   ============================================================ */
+.scrim{ position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.62); backdrop-filter:blur(3px); display:flex; align-items:flex-end; justify-content:center; animation:fade .2s var(--ease); }
+@media(min-width:640px){ .scrim{ align-items:center; } }
+@keyframes fade{ from{ opacity:0 } to{ opacity:1 } }
+.sheet{
+  width:100%; max-width:520px; max-height:88dvh; overflow-y:auto; background:var(--bg2);
+  border:1px solid var(--border); border-radius:22px 22px 0 0; padding:22px 20px calc(22px + env(safe-area-inset-bottom));
+  animation:slideUp .28s var(--ease);
+}
+@media(min-width:640px){ .sheet{ border-radius:20px; padding:24px; } }
+@keyframes slideUp{ from{ transform:translateY(22px); opacity:0 } to{ transform:translateY(0); opacity:1 } }
+.sheet h2{ font-family:var(--font-display); font-size:1.4rem; font-weight:400; line-height:1.2; }
+.sheet .sheet-body{ margin-top:12px; color:var(--muted); font-size:.85rem; line-height:1.65; }
+.sheet-actions{ display:flex; flex-direction:column; gap:9px; margin-top:20px; }
+
+#toast-wrap{ position:fixed; left:0; right:0; bottom:calc(var(--tabbar-h) + 18px + env(safe-area-inset-bottom)); z-index:800; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; padding:0 16px; }
+@media(min-width:900px){ #toast-wrap{ bottom:24px; } }
+.toast{
+  background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  padding:11px 17px; border-radius:12px; font-size:.81rem; box-shadow:var(--shadow);
+  animation:toastIn .22s var(--ease); max-width:420px;
+}
+.toast.err{ border-color:rgba(196,69,59,.5); color:#E0705F; }
+@keyframes toastIn{ from{ transform:translateY(10px); opacity:0 } to{ transform:translateY(0); opacity:1 } }
+
+/* Skeleton */
+.skel{ background:linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%); background-size:200% 100%; animation:sk 1.35s infinite; border-radius:10px; }
+@keyframes sk{ 0%{ background-position:200% 0 } 100%{ background-position:-200% 0 } }
+
+/* Tabs / segmented */
+.segmented{ display:inline-flex; background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:3px; gap:2px; }
+.segmented button{ padding:7px 15px; border-radius:9px; font-size:.79rem; font-weight:600; color:var(--muted); transition:.18s var(--ease); }
+.segmented button.on{ background:var(--surface); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.16); }
+
+/* Upload */
+.upload-box{ border:1.5px dashed var(--border); border-radius:14px; padding:22px; text-align:center; cursor:pointer; transition:.18s var(--ease); }
+.upload-box:hover{ border-color:var(--green); background:var(--green-soft); }
+.upload-box svg{ width:24px; height:24px; stroke:var(--muted); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; margin-bottom:8px; }
+.upload-box p{ font-size:.79rem; color:var(--muted); }
+.preview-img{ width:100%; border-radius:12px; overflow:hidden; margin-top:10px; border:1px solid var(--border); }
+.progress{ height:4px; background:var(--border); border-radius:3px; overflow:hidden; margin-top:10px; }
+.progress i{ display:block; height:100%; background:var(--green); width:0; transition:width .25s var(--ease); }
+
+/* Footer note */
+.foot-note{ text-align:center; padding:30px 20px 20px; color:var(--muted); font-size:.71rem; line-height:1.7; }
+.foot-note a{ color:var(--green); font-weight:600; }
+
+/* Mobile-only PWA shell */
+:root{ --maxw:480px; }
+body{ min-width:320px; }
+#app, #auth{ width:100%; max-width:480px; margin-inline:auto; }
+.container{ max-width:480px; }
+#app{ padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+.tabbar, #tabbar{
+  left:50%; right:auto; width:100%; max-width:480px;
+  transform:translateX(-50%);
+  position:fixed; bottom:0; top:auto; height:calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  border-top:1px solid var(--border-soft); border-bottom:0; padding:0 0 env(safe-area-inset-bottom);
+  background:color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
+  order:initial;
+}
+.tabbar-wrap{ width:100%; max-width:480px; height:100%; margin:0 auto; display:flex; align-items:stretch; padding:0; gap:0; }
+.tab{ flex:1 1 0; height:100%; flex-direction:column; gap:3px; padding:0 2px; font-size:.63rem; }
+.tab .tab-badge{ position:absolute; margin:0; }
+.product-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+.stat-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+.form-grid.two{ grid-template-columns:1fr; }
+.detail-grid{ grid-template-columns:1fr; }
+.sticky-actions{ position:sticky; bottom:calc(var(--tabbar-h) + 12px); }
+.scrim{ align-items:flex-end; }
+.sheet{ border-radius:22px 22px 0 0; }
+
+/* Login flow matching the standalone login screen */
+#auth{ min-height:100dvh; background:var(--bg); }
+#auth.auth-card-layout{
+  display:flex;
+  flex-direction:column;
+}
+.auth-header{
+  background:linear-gradient(135deg, #059669, #10B981);
+  padding:60px 24px 80px;
+  position:relative;
+  border-radius:0 0 36px 36px;
+  color:#fff;
+  overflow:hidden;
+}
+.auth-header h1{ font-family:var(--font-display); font-size:2.2rem; font-weight:400; }
+.auth-header p{ font-size:.9rem; opacity:.9; margin-top:8px; }
+.auth-body-card{
+  flex:1;
+  padding:0 20px 40px;
+  margin-top:-40px;
+  position:relative;
+  z-index:10;
+}
+.auth-card{
+  background:var(--surface); border-radius:24px; padding:28px 24px;
+  box-shadow:var(--shadow); border:1px solid var(--border);
+}
+.auth-card h2{ font-size:1.3rem; margin-bottom:6px; }
+.auth-card > p{ color:var(--muted); font-size:.85rem; margin-bottom:22px; }
+.auth-toggle{ text-align:center; margin-top:24px; font-size:.85rem; color:var(--muted); }
+.auth-toggle a{ color:var(--green); font-weight:600; margin-left:4px; }
+.login-role-toggle{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  margin-bottom:20px;
+  padding:4px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--bg);
+}
+.login-role-toggle button{
+  height:40px;
+  border-radius:9px;
+  color:var(--muted);
+  font-size:.82rem;
+  font-weight:700;
+  transition:.18s var(--ease);
+}
+.login-role-toggle button.active{
+  background:var(--green);
+  color:#fff;
+  box-shadow:0 4px 12px var(--green-soft);
+}
+.auth-brand{
+  width:76px;
+  height:76px;
+  margin:0 0 18px;
+  border-radius:18px;
+  object-fit:contain;
+  background:#101310;
+  box-shadow:0 10px 24px rgba(0,0,0,.18);
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== SPLASH ===================== -->
+<div id="splash">
+  <div class="splash-inner">
+    <img class="splash-mark" src="./jalsa%20logo.png" alt="Jalsa Market" />
+    <div class="splash-word">Jalsa Market</div>
+    <div class="splash-tag">Discover · Connect · Shop</div>
+    <div class="splash-dots"><i></i><i></i><i></i></div>
+  </div>
+</div>
+
+<!-- ===================== AUTH ===================== -->
+<div id="auth" class="hide"></div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" class="hide">
+  <header class="app-header">
+    <div class="container header-inner" id="header-inner"></div>
+  </header>
+  <div class="tabbar" id="tabbar"></div>
+  <main id="view"></main>
+</div>
+
+<div id="toast-wrap"></div>
+<div id="modal-root"></div>
+
+<script type="module">
+/* ============================================================
+   JALSA MARKET — APPLICATION LOGIC
+   Sections: CONFIG · UTIL · STATE · API · AUTH · IMAGES
+             RENDER · ROUTER · EVENTS · BOOT
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   0. CONFIG — EDIT THESE
+   ------------------------------------------------------------ */
+const CONFIG = {
+  SUPABASE_URL: 'https://aveqcypjvubzncogmcfg.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_J0wp4Cno9fTGVGSGDllvZw_nSuX_ec3',
+  VENDOR_GROUP_URL: 'https://chat.whatsapp.com/GQN7OJ0yENWFceg2hKHrGG?s=cl&p=a&iam=2',
+  SUPPORT_WHATSAPP: '2349037343145',   // 09037343145 in international form
+  SPLASH_MS: 3200,
+  PAGE_SIZE: 12,
+  ADMIN_PATH: 'adminkhalifah'
+};
+const IS_CONFIGURED = Boolean(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
+const WA_SUPPORT_DISPLAY = '09037343145';
+
+/* ------------------------------------------------------------
+   1. UTILITIES
+   ------------------------------------------------------------ */
+const $  = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => (
+  { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+));
+
+const money = (n) => '₦' + Number(n || 0).toLocaleString('en-NG', {
+  minimumFractionDigits: 0, maximumFractionDigits: 2
+});
+
+const initials = (name) => String(name || '?').trim().split(/\s+/).slice(0, 2)
+  .map(w => w[0] || '').join('').toUpperCase();
+
+const slugify = (s) => String(s || '').toLowerCase().normalize('NFKD')
+  .replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-').slice(0, 60);
+
+const timeAgo = (iso) => {
+  if (!iso) return '';
+  const d = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (d < 60) return 'just now';
+  if (d < 3600) return Math.floor(d / 60) + 'm ago';
+  if (d < 86400) return Math.floor(d / 3600) + 'h ago';
+  if (d < 604800) return Math.floor(d / 86400) + 'd ago';
+  return new Date(iso).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
+};
+
+const debounce = (fn, ms = 320) => {
+  let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+};
+
+function authEmailError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  if (message.includes('rate limit') || message.includes('too many') || message.includes('email_rate_limit')) {
+    return 'Too many email requests. Please wait a few minutes, check your inbox or spam folder, and try again.';
+  }
+  if (message.includes('invalid login credentials')) {
+    return 'The email could not be verified. Request a new sign-in email.';
+  }
+  if (message.includes('email not confirmed')) {
+    return 'Open the confirmation email link before signing in again.';
+  }
+  return error?.message || 'Unable to send the email. Please try again.';
+}
+
+function canSendAuthEmail(email) {
+  const key = `jalsa.email.sent.${String(email).trim().toLowerCase()}`;
+  const previous = Number(sessionStorage.getItem(key) || '0');
+  const waitSeconds = 60 - Math.floor((Date.now() - previous) / 1000);
+  if (previous && waitSeconds > 0) {
+    throw new Error(`A sign-in email was just sent. Check your inbox or spam folder and wait ${waitSeconds} seconds before requesting another.`);
+  }
+  sessionStorage.setItem(key, String(Date.now()));
+}
+
+function toast(msg, type = '') {
+  const wrap = $('#toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type === 'err' ? ' err' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 2600);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function openSheet(html) {
+  const root = $('#modal-root');
+  root.innerHTML = `<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  root.querySelector('[data-scrim]').addEventListener('click', (e) => {
+    if (e.target.hasAttribute('data-scrim')) closeSheet();
+  });
+  document.body.style.overflow = 'hidden';
+}
+function closeSheet() {
+  $('#modal-root').innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+const waLink = (phone, text) => {
+  const num = String(phone || '').replace(/\D/g, '').replace(/^0/, '234');
+  return `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
+};
+const supportLink = (text) => waLink(CONFIG.SUPPORT_WHATSAPP, text);
+
+/* SVG icon set (inline, professional) */
+const ICON = {
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20a1 1 0 0 0 1 1h4v-6h3v6h4a1 1 0 0 0 1-1V9.5"/>',
+  explore:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>',
+  saved:'<path d="M12 20s-7-4.4-7-9.3A4 4 0 0 1 12 7.6 4 4 0 0 1 19 10.7C19 15.6 12 20 12 20Z"/>',
+  cart:'<path d="M3 4h2l2.2 10.4a2 2 0 0 0 2 1.6h7.4a2 2 0 0 0 2-1.6L20 7H6"/><circle cx="9.5" cy="19.5" r="1.2"/><circle cx="17" cy="19.5" r="1.2"/>',
+  me:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
+  menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  share:'<circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="m8.3 10.8 7.4-4.3M8.3 13.2l7.4 4.3"/>',
+  whatsapp:'<path d="M20.5 11.6a8.5 8.5 0 0 1-12.7 7.4L3.5 20.5l1.5-4.2A8.5 8.5 0 1 1 20.5 11.6Z"/><path d="M8.8 9.2c.3 1.9 1.9 3.7 3.6 4.3l1.1-1.1 1.7.7"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  minus:'<path d="M5 12h14"/>',
+  trash:'<path d="M4 7h16M9 7V4.8A.8.8 0 0 1 9.8 4h4.4a.8.8 0 0 1 .8.8V7"/><path d="M6 7l1 12.2a1 1 0 0 0 1 .8h8a1 1 0 0 0 1-.8L18 7"/>',
+  check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  chev:'<path d="m9 6 6 6-6 6"/>',
+  chevL:'<path d="m15 6-6 6 6 6"/>',
+  store:'<path d="M4 9h16v10.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5Z"/><path d="M4 9 6 4h12l2 5"/><path d="M9.5 21v-6h5v6"/>',
+  box:'<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/>',
+  shield:'<path d="M12 3 4.5 6v6c0 4.4 3.1 8.2 7.5 9 4.4-.8 7.5-4.6 7.5-9V6Z"/>',
+  flag:'<path d="M5 21V4"/><path d="M5 5h11l-1.6 3.2L16 11H5"/>',
+  logout:'<path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/>',
+  edit:'<path d="M4 20h4L20 8l-4-4L4 16Z"/>',
+  image:'<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.7"/><path d="m4 18 5-4.5 4 3.5 3-2.5 4 3.5"/>',
+  camera:'<path d="M4 8h3l1.6-2h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.2"/>',
+  bell:'<path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Z"/><path d="M10.5 20a2 2 0 0 0 3 0"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16.5 5.2a3.2 3.2 0 0 1 0 5.6M18 14.4a6.5 6.5 0 0 1 3.5 5.6"/>',
+  tag:'<path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9Z"/><circle cx="7.5" cy="7.5" r="1.4"/>',
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  alert:'<path d="M12 8v5M12 16.5v.01"/><path d="M10.3 3.9 2.4 17.5A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>',
+  heart:'<path d="M12 20s-7-4.4-7-9.3A4 4 0 0 1 12 7.6 4 4 0 0 1 19 10.7C19 15.6 12 20 12 20Z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>',
+  external:'<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5.5l3.5 2"/>',
+  pin:'<path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/>'
+};
+const icon = (name, cls = '') =>
+  `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name] || ''}</svg>`;
+
+/* ------------------------------------------------------------
+   2. STATE
+   ------------------------------------------------------------ */
+const state = {
+  session: null,
+  profile: null,
+  vendor: null,            // vendor row owned by current user
+  loginRole: 'user',            // vendor row owned by current user
+  isAdmin: false,
+  mode: 'customer',        // 'customer' | 'vendor'
+  cart: [],                // [{ id, product_id, quantity, price_snapshot, product, vendor }]
+  saved: new Set(),
+  categories: [],
+  announcements: [],
+  activeEvent: null,
+  prefs: { theme: 'dark', textsize: 'md', notify: true },
+  route: { name: 'home', params: {} },
+  booted: false
+};
+
+/* Preferences persisted locally (never sensitive data) */
+const PREFS_KEY = 'jalsa.prefs.v1';
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (raw) Object.assign(state.prefs, JSON.parse(raw));
+  } catch (_) {}
+  applyPrefs();
+}
+function savePrefs() {
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify(state.prefs)); } catch (_) {}
+  applyPrefs();
+}
+function applyPrefs() {
+  const root = document.documentElement;
+  const t = state.prefs.theme;
+  const resolved = t === 'system'
+    ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+    : t;
+  root.setAttribute('data-theme', resolved);
+  root.setAttribute('data-textsize', state.prefs.textsize);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', resolved === 'light' ? '#FFFFFF' : '#101310');
+}
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+  if (state.prefs.theme === 'system') applyPrefs();
+});
+
+/* Local preview fallback for un-configured deployments */
+const LOCAL = {
+  get profile() { try { return JSON.parse(localStorage.getItem('jalsa.demo.profile') || 'null'); } catch { return null; } },
+  set profile(v) { localStorage.setItem('jalsa.demo.profile', JSON.stringify(v)); },
+  get cart() { try { return JSON.parse(localStorage.getItem('jalsa.demo.cart') || '[]'); } catch { return []; } },
+  set cart(v) { localStorage.setItem('jalsa.demo.cart', JSON.stringify(v)); },
+  get saved() { try { return JSON.parse(localStorage.getItem('jalsa.demo.saved') || '[]'); } catch { return []; } },
+  set saved(v) { localStorage.setItem('jalsa.demo.saved', JSON.stringify(v)); }
+};
+
+/* ------------------------------------------------------------
+   3. SUPABASE CLIENT
+   ------------------------------------------------------------ */
+let supabase = null;
+if (IS_CONFIGURED) {
+  const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+  supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+}
+
+/* ------------------------------------------------------------
+   4. DATA ACCESS LAYER
+   ------------------------------------------------------------ */
+const api = {
+  /* ---- categories (public) ---- */
+  async categories() {
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('categories')
+      .select('id,name,slug,sort_order').eq('is_active', true).order('sort_order');
+    if (error) { console.warn(error); return []; }
+    return data || [];
+  },
+
+  /* ---- events ---- */
+  async activeEvent() {
+    if (!supabase) return null;
+    const { data } = await supabase.from('events').select('*')
+      .eq('is_active', true).order('starts_on', { ascending: true }).limit(1).maybeSingle();
+    return data || null;
+  },
+  async announcements(limit = 3) {
+    if (!supabase) return [];
+    const { data } = await supabase.from('announcements').select('*')
+      .not('published_at', 'is', null).is('archived_at', null)
+      .order('published_at', { ascending: false }).limit(limit);
+    return data || [];
+  },
+
+  /* ---- products ---- */
+  async products({ page = 0, size = CONFIG.PAGE_SIZE, category = null, search = '', sort = 'recent' } = {}) {
+    if (!supabase) return [];
+    let q = supabase.from('products')
+      .select('id,name,slug,price,currency,is_available,is_preorder,created_at,vendor_id,'
+        + 'vendors!inner(id,business_name,slug,status,stall_number),'
+        + 'product_images(storage_path,sort_order)')
+      .eq('vendors.status', 'approved')
+      .range(page * size, page * size + size - 1);
+
+    if (category) q = q.eq('category_id', category);
+    if (search) q = q.ilike('name', `%${search}%`);
+    q = sort === 'price_asc' ? q.order('price', { ascending: true })
+      : sort === 'price_desc' ? q.order('price', { ascending: false })
+      : q.order('created_at', { ascending: false });
+
+    const { data, error } = await q;
+    if (error) { console.warn(error); return []; }
+    return (data || []).map(normalizeProduct);
+  },
+
+  async product(id) {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('products')
+      .select('*, vendors!inner(id,business_name,slug,status,stall_number,whatsapp_number,'
+        + 'accepts_preorders,preorder_details,collection_info,jalsa_availability),'
+        + 'product_images(id,storage_path,sort_order),categories(name,slug)')
+      .eq('id', id).maybeSingle();
+    if (error || !data) return null;
+    return normalizeProduct(data);
+  },
+
+  async vendors({ limit = 12, foodOnly = false } = {}) {
+    if (!supabase) return [];
+    let q = supabase.from('vendors')
+      .select('id,business_name,slug,logo_path,cover_path,business_category,stall_number,'
+        + 'participation_type,jalsa_availability,is_featured,categories(name)')
+      .eq('status', 'approved').limit(limit);
+    if (foodOnly) q = q.ilike('business_category', '%food%');
+    const { data } = await q;
+    return data || [];
+  },
+
+  async vendorBySlug(slug) {
+    if (!supabase) return null;
+    const { data } = await supabase.from('vendors').select('*')
+      .eq('slug', slug).eq('status', 'approved').maybeSingle();
+    return data || null;
+  },
+
+  async vendorProducts(vendorId) {
+    if (!supabase) return [];
+    const { data } = await supabase.from('products')
+      .select('id,name,slug,price,currency,is_available,is_preorder,created_at,vendor_id,product_images(storage_path,sort_order)')
+      .eq('vendor_id', vendorId).eq('is_available', true)
+      .order('created_at', { ascending: false }).limit(60);
+    return (data || []).map(normalizeProduct);
+  },
+
+  /* ---- saved ---- */
+  async savedList() {
+    if (!supabase) return LOCAL.saved;
+    const { data } = await supabase.from('saved_products')
+      .select('product_id, products(id,name,price,is_available,vendor_id,product_images(storage_path,sort_order),vendors(business_name,slug))')
+      .order('created_at', { ascending: false });
+    return (data || []).map(r => r.products).filter(Boolean).map(normalizeProduct);
+  },
+  async savedToggle(productId) {
+    if (!supabase) {
+      const list = LOCAL.saved;
+      const i = list.indexOf(productId);
+      i >= 0 ? list.splice(i, 1) : list.push(productId);
+      LOCAL.saved = list;
+      return i < 0;
+    }
+    const { data: existing } = await supabase.from('saved_products')
+      .select('product_id').eq('product_id', productId).maybeSingle();
+    if (existing) {
+      await supabase.from('saved_products').delete().eq('product_id', productId);
+      return false;
+    }
+    await supabase.from('saved_products').insert({ product_id: productId, customer_id: state.session.user.id });
+    return true;
+  },
+
+  /* ---- cart ---- */
+  async loadCart() {
+    if (!supabase) { state.cart = LOCAL.cart; return; }
+    const { data: cart } = await supabase.from('carts').select('id').maybeSingle();
+    if (!cart) { state.cart = []; return; }
+    const { data } = await supabase.from('cart_items')
+      .select('id,quantity,price_snapshot,product_id,'
+        + 'products(id,name,price,is_available,vendor_id,product_images(storage_path,sort_order),'
+        + 'vendors(id,business_name,slug,whatsapp_number,stall_number,preorder_details))')
+      .eq('cart_id', cart.id);
+    state.cart = (data || []).filter(r => r.products).map(r => ({
+      id: r.id,
+      product_id: r.product_id,
+      quantity: r.quantity,
+      price_snapshot: r.price_snapshot,
+      product: normalizeProduct(r.products),
+      vendor: r.products.vendors
+    }));
+  },
+
+  async addToCart(product, vendor, qty = 1) {
+    if (!supabase) {
+      const cart = LOCAL.cart;
+      const found = cart.find(i => i.product_id === product.id);
+      if (found) found.quantity += qty;
+      else cart.push({ id: crypto.randomUUID(), product_id: product.id, quantity: qty, price_snapshot: product.price, product, vendor });
+      LOCAL.cart = cart; state.cart = cart; return;
+    }
+    let { data: cart } = await supabase.from('carts').select('id').maybeSingle();
+    if (!cart) {
+      const ins = await supabase.from('carts').insert({ customer_id: state.session.user.id }).select('id').single();
+      cart = ins.data;
+    }
+    const { data: existing } = await supabase.from('cart_items')
+      .select('id,quantity').eq('cart_id', cart.id).eq('product_id', product.id).maybeSingle();
+    if (existing) {
+      await supabase.from('cart_items').update({ quantity: existing.quantity + qty }).eq('id', existing.id);
+    } else {
+      await supabase.from('cart_items').insert({
+        cart_id: cart.id, product_id: product.id, quantity: qty, price_snapshot: product.price
+      });
+    }
+    await api.loadCart();
+  },
+
+  async setQty(itemId, qty) {
+    if (!supabase) {
+      const cart = LOCAL.cart;
+      const it = cart.find(i => i.id === itemId);
+      if (it) { qty <= 0 ? cart.splice(cart.indexOf(it), 1) : it.quantity = qty; }
+      LOCAL.cart = cart; state.cart = cart; return;
+    }
+    if (qty <= 0) await supabase.from('cart_items').delete().eq('id', itemId);
+    else await supabase.from('cart_items').update({ quantity: qty }).eq('id', itemId);
+    await api.loadCart();
+  },
+
+  /* ---- analytics ---- */
+  async trackView(kind, id) {
+    if (!supabase) return;
+    try {
+      if (kind === 'storefront') await supabase.from('storefront_views').insert({ vendor_id: id });
+      if (kind === 'product') await supabase.from('product_views').insert({ product_id: id });
+    } catch (_) {}
+  },
+  async trackWhatsApp(payload) {
+    if (!supabase) return;
+    try { await supabase.from('whatsapp_clicks').insert(payload); } catch (_) {}
+  }
+};
+
+function normalizeProduct(p) {
+  const imgs = (p.product_images || []).slice().sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  return {
+    ...p,
+    images: imgs.map(i => storageUrl(i.storage_path)),
+    image: imgs.length ? storageUrl(imgs[0].storage_path) : null,
+    vendor_name: p.vendors?.business_name || '',
+    vendor_slug: p.vendors?.slug || '',
+    vendor_id: p.vendor_id || p.vendors?.id
+  };
+}
+
+function storageUrl(path) {
+  if (!path) return null;
+  if (/^https?:/.test(path)) return path;
+  if (!supabase) return null;
+  const bucket = path.split('/')[0];
+  const rest = path.split('/').slice(1).join('/');
+  const { data } = supabase.storage.from(bucket).getPublicUrl(rest);
+  return data?.publicUrl || null;
+}
+
+/* ------------------------------------------------------------
+   5. AUTH
+   ------------------------------------------------------------ */
+async function restoreSession() {
+  if (!supabase) {
+    state.profile = LOCAL.profile;
+    if (state.profile) await afterAuth();
+    return Boolean(state.profile);
+  }
+  const { data } = await supabase.auth.getSession();
+  state.session = data?.session || null;
+  if (!state.session) return false;
+
+  await completePendingSignup();
+
+  const { data: prof } = await supabase.from('profiles').select('*').eq('id', state.session.user.id).maybeSingle();
+  if (!prof) return false;
+  state.profile = prof;
+
+  const { data: adminRow } = await supabase.from('admin_users').select('user_id').eq('user_id', state.session.user.id).maybeSingle();
+  state.isAdmin = Boolean(adminRow);
+
+  const { data: v } = await supabase.from('vendors').select('*').eq('owner_id', state.session.user.id).maybeSingle();
+  state.vendor = v || null;
+
+  await afterAuth();
+  return true;
+}
+
+async function afterAuth() {
+  await Promise.all([refreshCart(), refreshSaved()]);
+  if (state.vendor) state.mode = 'vendor';
+}
+
+async function completePendingSignup() {
+  let pending;
+  try {
+    pending = JSON.parse(sessionStorage.getItem('jalsa.pending.signup') || 'null');
+  } catch (_) {
+    return;
+  }
+  if (!pending || !state.session?.user?.id) return;
+
+  const uid = state.session.user.id;
+
+  if (pending.role === 'user') {
+    const { error } = await supabase.from('profiles').upsert({
+      id: uid,
+      full_name: pending.fullName,
+      email: pending.email,
+      phone: pending.phone,
+      is_vendor: false,
+      marketing_consent: Boolean(pending.consent),
+      consent_at: pending.consent ? new Date().toISOString() : null
+    });
+    if (error) throw error;
+
+    if (pending.consent) {
+      await supabase.from('user_consents').insert({
+        user_id: uid,
+        consent_type: 'whatsapp_marketing',
+        granted: true
+      });
+    }
+  } else {
+    const { error: profileError } = await supabase.from('profiles').upsert({
+      id: uid,
+      full_name: pending.ownerName,
+      email: pending.email,
+      phone: pending.phone,
+      is_vendor: true
+    });
+    if (profileError) throw profileError;
+
+    const baseSlug = slugify(pending.businessName) || 'store';
+    const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+    const { error: vendorError } = await supabase.from('vendors').insert({
+      owner_id: uid,
+      business_name: pending.businessName,
+      slug,
+      business_category: pending.businessCategory,
+      state: pending.state,
+      district: pending.district,
+      local_jamaat: pending.localJamaat,
+      participation_type: pending.participationType,
+      stall_number: pending.stallNumber || null,
+      description: pending.description,
+      whatsapp_number: pending.phone,
+      status: 'pending'
+    });
+    if (vendorError) throw vendorError;
+  }
+
+  sessionStorage.removeItem('jalsa.pending.signup');
+}
+
+async function refreshCart() { await api.loadCart(); updateCartBadge(); }
+async function refreshSaved() {
+  const list = await api.savedList();
+  state.saved = new Set(list.map(p => p.id));
+}
+
+async function customerSignup({ email, fullName, phone, consent }) {
+  canSendAuthEmail(email);
+  if (!supabase) {
+    state.profile = {
+      id: 'demo-user', full_name: fullName, phone,
+      marketing_consent: consent, created_at: new Date().toISOString()
+    };
+    LOCAL.profile = state.profile;
+    await afterAuth();
+    return;
+  }
+  sessionStorage.setItem('jalsa.pending.signup', JSON.stringify({
+    role: 'user', email, fullName, phone, consent
+  }));
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: `${location.origin}${location.pathname}`
+    }
+  });
+  if (error) throw new Error(authEmailError(error));
+  throw new Error('Check your email and open the confirmation link to finish creating your account.');
+}
+
+async function vendorSignup(form) {
+  if (!supabase) {
+    const slug = `${slugify(form.business_name) || 'store'}-${Math.random().toString(36).slice(2, 6)}`;
+    state.profile = {
+      id: 'demo-vendor',
+      full_name: form.owner_name,
+      phone: form.phone,
+      is_vendor: true
+    };
+    state.vendor = {
+      id: 'demo-vendor-store',
+      owner_id: 'demo-vendor',
+      business_name: form.business_name,
+      slug,
+      business_category: form.business_category,
+      whatsapp_number: form.phone,
+      status: 'pending'
+    };
+    LOCAL.profile = state.profile;
+    state.mode = 'vendor';
+    await afterAuth();
+    return state.vendor;
+  }
+  canSendAuthEmail(form.email);
+  sessionStorage.setItem('jalsa.pending.signup', JSON.stringify({
+    role: 'vendor',
+    email: form.email,
+    ownerName: form.owner_name,
+    businessName: form.business_name,
+    phone: form.phone,
+    businessCategory: form.business_category,
+    state: form.state,
+    district: form.district,
+    localJamaat: form.local_jamaat,
+    participationType: form.participation_type,
+    stallNumber: form.stall_number,
+    description: form.description
+  }));
+  const { error } = await supabase.auth.signInWithOtp({
+    email: form.email,
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: `${location.origin}${location.pathname}`
+    }
+  });
+  if (error) throw new Error(authEmailError(error));
+  throw new Error('Check your email and open the confirmation link to finish creating your vendor account.');
+}
+
+async function login(email, password) {
+  if (!supabase) throw new Error('Supabase is not configured.');
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(error.message);
+  const ok = await restoreSession();
+  if (!ok) throw new Error('Signed in, but no profile was found for this account.');
+}
+
+async function loginByNameAndPhone(role, name, phone) {
+  const cleanName = String(name || '').trim();
+  const cleanPhone = String(phone || '').trim();
+  if (!cleanName || !cleanPhone) throw new Error('Enter both your name and phone number.');
+
+  if (!supabase) {
+    if (role === 'vendor') {
+      state.profile = {
+        id: 'demo-vendor',
+        full_name: cleanName,
+        phone: cleanPhone,
+        is_vendor: true
+      };
+      state.vendor = {
+        id: 'demo-vendor-store',
+        owner_id: 'demo-vendor',
+        business_name: cleanName,
+        slug: 'demo-store',
+        status: 'approved',
+        whatsapp_number: cleanPhone
+      };
+      LOCAL.profile = state.profile;
+      state.mode = 'vendor';
+      await afterAuth();
+      return;
+    }
+
+    const existing = LOCAL.profile;
+    state.profile = existing
+      ? { ...existing, full_name: cleanName, phone: cleanPhone }
+      : { id: 'demo-user', full_name: cleanName, phone: cleanPhone, created_at: new Date().toISOString() };
+    LOCAL.profile = state.profile;
+    state.mode = 'customer';
+    await afterAuth();
+    return;
+  }
+
+  if (role === 'vendor') {
+    const { data, error } = await supabase.rpc('jalsa_lookup_login', {
+      p_role: 'vendor',
+      p_name: cleanName,
+      p_phone: cleanPhone
+    });
+    if (error) throw new Error(error.message);
+    const match = Array.isArray(data) ? data[0] : data;
+    if (!match?.email) throw new Error('No vendor account matches those details.');
+    canSendAuthEmail(match.email);
+    const otp = await supabase.auth.signInWithOtp({
+      email: match.email,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${location.origin}${location.pathname}`
+        }
+    });
+    if (otp.error) throw new Error(authEmailError(otp.error));
+    sessionStorage.setItem('jalsa.pending.login', JSON.stringify({
+      role: 'vendor',
+      name: cleanName,
+      phone: cleanPhone
+    }));
+    throw new Error('Check your email and open the confirmation link to log in.');
+    return;
+  }
+
+  const { data, error } = await supabase.rpc('jalsa_lookup_login', {
+    p_role: 'user',
+    p_name: cleanName,
+    p_phone: cleanPhone
+  });
+  if (error) throw new Error(error.message);
+  const match = Array.isArray(data) ? data[0] : data;
+  if (!match?.email) throw new Error('No user account matches those details.');
+  canSendAuthEmail(match.email);
+  const otp = await supabase.auth.signInWithOtp({
+    email: match.email,
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: `${location.origin}${location.pathname}`
+    }
+  });
+  if (otp.error) throw new Error(authEmailError(otp.error));
+  sessionStorage.setItem('jalsa.pending.login', JSON.stringify({
+    role: 'user',
+    name: cleanName,
+    phone: cleanPhone
+  }));
+  throw new Error('Check your email and open the confirmation link to log in.');
+}
+
+async function logout() {
+  if (supabase) await supabase.auth.signOut();
+  else { LOCAL.profile = null; }
+  state.session = null; state.profile = null; state.vendor = null;
+  state.cart = []; state.saved = new Set(); state.isAdmin = false; state.mode = 'customer';
+  location.hash = '#/home';
+  renderAuth();
+}
+
+/* ------------------------------------------------------------
+   6. IMAGE OPTIMISATION
+   ------------------------------------------------------------ */
+const IMG_PRESETS = {
+  product:  { maxW: 1000, maxH: 1000, targetKB: 220, bucket: 'product-images' },
+  thumb:    { maxW: 400,  maxH: 400,  targetKB: 100, bucket: 'product-images' },
+  logo:     { maxW: 256,  maxH: 256,  targetKB: 60,  bucket: 'vendor-logos'   },
+  cover:    { maxW: 1200, maxH: 400,  targetKB: 180, bucket: 'store-covers'   }
+};
+
+async function compressImage(file, preset) {
+  if (!file.type.startsWith('image/')) throw new Error('Please choose an image file.');
+  if (file.size > 12 * 1024 * 1024) throw new Error('Image is larger than 12 MB.');
+
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, preset.maxW / bitmap.width, preset.maxH / bitmap.height);
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close?.();
+
+  const supportsWebp = canvas.toDataURL('image/webp').startsWith('data:image/webp');
+  const mime = supportsWebp ? 'image/webp' : 'image/jpeg';
+  const ext = supportsWebp ? 'webp' : 'jpg';
+
+  let quality = 0.86;
+  let blob = await new Promise(r => canvas.toBlob(r, mime, quality));
+  while (blob && blob.size / 1024 > preset.targetKB && quality > 0.45) {
+    quality -= 0.08;
+    blob = await new Promise(r => canvas.toBlob(r, mime, quality));
+  }
+  if (!blob) throw new Error('Could not process this image.');
+  return { blob, ext, width: w, height: h, sizeKB: Math.round(blob.size / 1024) };
+}
+
+async function uploadImage(file, preset, vendorId, onProgress) {
+  if (!supabase) throw new Error('Supabase is not configured.');
+  const { blob, ext, width, height, sizeKB } = await compressImage(file, preset);
+  onProgress?.(30);
+  const path = `${vendorId}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(preset.bucket)
+    .upload(path, blob, { contentType: blob.type, cacheControl: '31536000', upsert: false });
+  if (error) throw new Error(error.message);
+  onProgress?.(100);
+  return { storagePath: `${preset.bucket}/${path}`, width, height, sizeKB };
+}
+
+/* ------------------------------------------------------------
+   7. RENDER — SHARED
+   ------------------------------------------------------------ */
+function updateCartBadge() {
+  const count = state.cart.reduce((s, i) => s + i.quantity, 0);
+  $$('[data-cart-badge]').forEach(el => {
+    el.textContent = count > 99 ? '99+' : String(count);
+    el.classList.toggle('hide', count === 0);
+  });
+}
+
+function renderHeader() {
+  const el = $('#header-inner');
+  const p = state.profile;
+  const firstName = (p?.full_name || '').trim().split(/\s+/)[0] || 'there';
+  const isVendorMode = state.mode === 'vendor' && state.vendor;
+
+  el.innerHTML = `
+    <a class="brand" href="#/home" aria-label="Jalsa Market home">
+      ${logoSVG(30)}
+      <span class="brand-text">
+        <span class="brand-name">Jalsa Market</span>
+        <span class="brand-greet">${isVendorMode ? esc(state.vendor.business_name) : 'Assalamu Alaikum, ' + esc(firstName)}</span>
+      </span>
+    </a>
+    <div class="header-actions">
+      ${state.vendor ? `
+        <button class="btn btn-sm btn-ghost" data-action="toggle-mode" title="Switch between customer and vendor">
+          ${isVendorMode ? 'Customer view' : 'Vendor view'}
+        </button>` : ''}
+      <button class="icon-btn" data-action="go-cart" aria-label="Cart">
+        ${icon('cart')}
+        <span class="cart-dot hide" data-cart-badge>0</span>
+      </button>
+      <button class="icon-btn" data-action="go-me" aria-label="Profile">
+        <span class="avatar">${esc(initials(p?.full_name))}</span>
+      </button>
+    </div>`;
+  updateCartBadge();
+}
+
+function logoSVG(size = 30) {
+  return `<img src="./jalsa%20logo.png" width="${size}" height="${size}" style="object-fit:contain;border-radius:18%" alt="Jalsa Market">`;
+}
+
+function renderTabbar() {
+  const el = $('#tabbar');
+  const vendorMode = state.mode === 'vendor' && state.vendor;
+  const tabs = vendorMode
+    ? [
+        { id: 'vdash', label: 'Dashboard', ico: 'chart', href: '#/vendor' },
+        { id: 'vproducts', label: 'Products', ico: 'box', href: '#/vendor/products' },
+        { id: 'vstore', label: 'Storefront', ico: 'store', href: '#/vendor/storefront' },
+        { id: 'vprofile', label: 'Profile', ico: 'settings', href: '#/vendor/profile' },
+        { id: 'vme', label: 'Me', ico: 'me', href: '#/me' }
+      ]
+    : [
+        { id: 'home', label: 'Home', ico: 'home', href: '#/home' },
+        { id: 'explore', label: 'Explore', ico: 'explore', href: '#/explore' },
+        { id: 'saved', label: 'Saved', ico: 'saved', href: '#/saved' },
+        { id: 'cart', label: 'Cart', ico: 'cart', href: '#/cart', badge: true },
+        { id: 'me', label: 'Me', ico: 'me', href: '#/me' }
+      ];
+
+  const current = state.route.name;
+  el.innerHTML = `<div class="tabbar-wrap">` + tabs.map(t => `
+    <a class="tab ${current === t.id ? 'active' : ''}" href="${t.href}">
+      ${icon(t.ico)}<span>${t.label}</span>
+      ${t.badge ? `<span class="tab-badge hide" data-cart-badge>0</span>` : ''}
+    </a>`).join('') + `</div>`;
+  updateCartBadge();
+}
+
+function productCard(p) {
+  const saved = state.saved.has(p.id);
+  const img = p.image
+    ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" width="400" height="400">`
+    : `<div class="ph">${icon('image')}</div>`;
+  return `
+  <article class="product-card" data-product="${esc(p.id)}">
+    <a class="p-media" href="#/product/${esc(p.id)}" aria-label="${esc(p.name)}">
+      ${img}
+      ${p.is_preorder ? '<span class="p-flag pre">Preorder</span>' : ''}
+      ${p.is_available === false ? '<span class="p-flag out">Unavailable</span>' : ''}
+    </a>
+    <button class="p-save ${saved ? 'on' : ''}" data-action="toggle-save" data-id="${esc(p.id)}"
+      aria-label="${saved ? 'Remove from saved' : 'Save product'}">${icon('saved')}</button>
+    <div class="p-body">
+      <a href="#/product/${esc(p.id)}" class="p-name">${esc(p.name)}</a>
+      <span class="p-vendor">${esc(p.vendor_name || '')}</span>
+      <span class="p-price">${money(p.price)}</span>
+    </div>
+  </article>`;
+}
+
+function emptyState(ico, title, body, action) {
+  return `<div class="empty">
+    <div class="e-ico">${icon(ico)}</div>
+    <h3>${esc(title)}</h3>
+    <p>${esc(body)}</p>
+    ${action || ''}
+  </div>`;
+}
+
+function skeletonGrid(n = 6) {
+  return `<div class="product-grid">` +
+    Array.from({ length: n }).map(() => `
+      <div class="product-card" aria-hidden="true">
+        <div class="skel" style="aspect-ratio:1/1;border-radius:0"></div>
+        <div style="padding:12px">
+          <div class="skel" style="height:11px;width:82%;margin-bottom:7px"></div>
+          <div class="skel" style="height:9px;width:52%;margin-bottom:10px"></div>
+          <div class="skel" style="height:12px;width:38%"></div>
+        </div>
+      </div>`).join('') + `</div>`;
+}
+
+/* ------------------------------------------------------------
+   8. RENDER — AUTH SCREEN
+   ------------------------------------------------------------ */
+function renderAuth(view = 'login') {
+  const el = $('#auth');
+  $('#app').classList.add('hide');
+  el.classList.remove('hide');
+  el.classList.remove('auth-card-layout');
+
+  if (view === 'welcome') {
+    return renderAuth('login');
+  }
+
+  if (view === 'customer') {
+    el.classList.add('auth-card-layout');
+    el.innerHTML = `
+      <div class="auth-header">
+        <img class="auth-brand" src="./jalsa%20logo.png" alt="Jalsa Market">
+        <h1>Create Account</h1>
+        <p>Join the Jalsa community today</p>
+      </div>
+      <div class="auth-body-card">
+        <div class="auth-card">
+          <h2>Sign Up</h2>
+          <p>Create your customer profile.</p>
+          <div class="login-role-toggle" aria-label="Sign up account type">
+            <button type="button" class="active" data-action="auth-view" data-view="customer">User</button>
+            <button type="button" data-action="auth-view" data-view="vendor">Vendor</button>
+          </div>
+          <form id="form-customer" class="form-grid" novalidate>
+            <div class="field">
+              <label class="label" for="c-name">Full name</label>
+              <input class="input" id="c-name" name="full_name" autocomplete="name" required maxlength="120" placeholder="Khalifah Bello">
+            </div>
+            <div class="field">
+              <label class="label" for="c-email">Email address</label>
+              <input class="input" id="c-email" name="email" type="email" autocomplete="email" required placeholder="hello@example.com">
+            </div>
+            <div class="field">
+              <label class="label" for="c-phone">Phone number</label>
+              <input class="input" id="c-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="0803 000 0000">
+            </div>
+            <label class="check">
+              <input type="checkbox" name="consent">
+              <span>I agree to receive Jalsa Market announcements and updates through WhatsApp.</span>
+            </label>
+            <p class="field-error hide" id="c-error"></p>
+            <button class="btn btn-primary btn-lg btn-block" type="submit">Create Account</button>
+          </form>
+          <div class="auth-toggle">
+            Already have an account?
+            <a href="#" data-action="auth-view" data-view="login">Log In</a>
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  if (view === 'vendor') {
+    el.classList.add('auth-card-layout');
+    el.innerHTML = `
+      <div class="auth-header">
+        <img class="auth-brand" src="./jalsa%20logo.png" alt="Jalsa Market">
+        <h1>Create Account</h1>
+        <p>Join the Jalsa community today</p>
+      </div>
+      <div class="auth-body-card">
+        <div class="auth-card">
+          <h2>Vendor Sign Up</h2>
+          <p>Open your storefront and reach Jalsa customers.</p>
+          <div class="login-role-toggle" aria-label="Sign up account type">
+            <button type="button" data-action="auth-view" data-view="customer">User</button>
+            <button type="button" class="active" data-action="auth-view" data-view="vendor">Vendor</button>
+          </div>
+          <form id="form-vendor" class="form-grid" novalidate>
+            <div class="field">
+              <label class="label" for="v-business">Business name</label>
+              <input class="input" id="v-business" name="business_name" required maxlength="120" placeholder="Al-Barakah Snacks">
+            </div>
+            <div class="field">
+              <label class="label" for="v-owner">Owner's full name</label>
+              <input class="input" id="v-owner" name="owner_name" autocomplete="name" required maxlength="120" placeholder="Khalifah Bello">
+            </div>
+            <div class="field">
+              <label class="label" for="v-email">Email address</label>
+              <input class="input" id="v-email" name="email" type="email" autocomplete="email" required placeholder="hello@example.com">
+            </div>
+            <div class="field">
+              <label class="label" for="v-phone">Phone number (WhatsApp)</label>
+              <input class="input" id="v-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="0803 000 0000">
+            </div>
+            <div class="field">
+              <label class="label" for="v-category">Business category</label>
+              <select class="select" id="v-category" name="business_category" required>
+                ${['Food & Snacks','Fashion','Books','Beauty','Electronics','Accessories','Shoes','Perfumes','Islamic Products','Home & Lifestyle','Phones & Accessories','Gifts','Groceries','Services','Other']
+                  .map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+              </select>
+            </div>
+            <div class="field">
+              <label class="label" for="v-state">State</label>
+              <input class="input" id="v-state" name="state" required maxlength="60" placeholder="Lagos">
+            </div>
+            <div class="field">
+              <label class="label" for="v-district">District / Dila</label>
+              <input class="input" id="v-district" name="district" required maxlength="80" placeholder="Epe">
+            </div>
+            <div class="field">
+              <label class="label" for="v-jamaat">Local Jamaat</label>
+              <input class="input" id="v-jamaat" name="local_jamaat" required maxlength="80" placeholder="Jamaat name">
+            </div>
+            <div class="field">
+              <label class="label" for="v-participation">Participation type</label>
+              <select class="select" id="v-participation" name="participation_type" required>
+                <option value="physical_stall">Physical stall at Jalsa</option>
+                <option value="preorder_only">Preorder only</option>
+                <option value="both">Physical stall + preorder</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="label" for="v-stall">Stall number (optional)</label>
+              <input class="input" id="v-stall" name="stall_number" maxlength="30" placeholder="B12">
+            </div>
+            <div class="field">
+              <label class="label" for="v-desc">Business description</label>
+              <textarea class="textarea" id="v-desc" name="description" maxlength="600" placeholder="Tell customers what you sell."></textarea>
+            </div>
+            <p class="field-error hide" id="v-error"></p>
+            <button class="btn btn-primary btn-lg btn-block" type="submit">Create Storefront</button>
+          </form>
+          <div class="auth-toggle">
+            Already have an account?
+            <a href="#" data-action="auth-view" data-view="login">Log In</a>
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  if (view === 'login') {
+    el.classList.add('auth-card-layout');
+    const role = state.loginRole || 'user';
+    const isVendor = role === 'vendor';
+    el.innerHTML = `
+      <div class="auth-header">
+        <img class="auth-brand" src="./jalsa%20logo.png" alt="Jalsa Market">
+        <h1>Welcome Back</h1>
+        <p>Sign in to continue to Jalsa Market</p>
+      </div>
+      <div class="auth-body-card">
+        <div class="auth-card">
+          <h2>Login Account</h2>
+          <p>Enter your details to access your account.</p>
+          <div class="login-role-toggle" aria-label="Login account type">
+            <button type="button" class="${!isVendor ? 'active' : ''}" data-action="login-role" data-role="user">User</button>
+            <button type="button" class="${isVendor ? 'active' : ''}" data-action="login-role" data-role="vendor">Vendor</button>
+          </div>
+          <form id="form-login" class="form-grid" novalidate>
+            <div class="field">
+              <label class="label" for="l-name">${isVendor ? 'Business name' : 'Full name'}</label>
+              <input class="input" id="l-name" name="name" type="text" autocomplete="${isVendor ? 'organization' : 'name'}" placeholder="${isVendor ? 'Al-Barakah Snacks' : 'Khalifah Bello'}" required>
+            </div>
+            <div class="field">
+              <label class="label" for="l-phone">Phone number</label>
+              <input class="input" id="l-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0803 000 0000" required>
+            </div>
+            <p class="field-error hide" id="l-error"></p>
+            <button class="btn btn-primary btn-lg btn-block" type="submit">Log In</button>
+          </form>
+          <div class="auth-toggle">
+            Don't have an account?
+            <a href="#" data-action="auth-view" data-view="${isVendor ? 'vendor' : 'customer'}">Sign Up</a>
+          </div>
+        </div>
+      </div>`;
+  }
+}
+
+/* ------------------------------------------------------------
+   9. RENDER — ROUTER
+   ------------------------------------------------------------ */
+function parseRoute() {
+  const hash = location.hash.replace(/^#/, '') || '/home';
+  const parts = hash.split('/').filter(Boolean);
+  return { name: parts[0] || 'home', params: { id: parts[1], section: parts[1] } };
+}
+
+async function router() {
+  const r = parseRoute();
+  state.route = r;
+
+  // Admin route guard
+  if (r.name === 'admin') {
+    return renderAdmin(r.params.section);
+  }
+  if (r.name === 'privacy') return renderPrivacy();
+
+  if (!state.profile) { renderAuth('login'); return; }
+
+  $('#auth').classList.add('hide');
+  $('#app').classList.remove('hide');
+  renderHeader();
+  renderTabbar();
+
+  const view = $('#view');
+  view.innerHTML = `<div class="container" style="padding:30px 0">${skeletonGrid(4)}</div>`;
+  window.scrollTo({ top: 0, behavior: 'instant' });
+
+  switch (r.name) {
+    case 'home':      return renderHome();
+    case 'explore':   return renderExplore();
+    case 'saved':     return renderSaved();
+    case 'cart':      return renderCart();
+    case 'me':        return renderMe();
+    case 'settings':  return renderSettings();
+    case 'product':   return renderProduct(r.params.id);
+    case 'store':     return renderStore(r.params.id);
+    case 'vendor':    return renderVendorArea(r.params.section);
+    default:          return renderHome();
+  }
+}
+
+/* ------------------------------------------------------------
+   10. RENDER — HOME
+   ------------------------------------------------------------ */
+async function renderHome() {
+  const view = $('#view');
+  const [vendors, foodVendors, products, anns] = await Promise.all([
+    api.vendors({ limit: 10 }),
+    api.vendors({ limit: 8, foodOnly: true }),
+    api.products({ size: 8 }),
+    api.announcements(2)
+  ]);
+  const ev = state.activeEvent;
+  const firstName = (state.profile?.full_name || '').trim().split(/\s+/)[0] || 'there';
+
+  view.innerHTML = `
+  <div class="container">
+    <div style="padding:18px 0 4px">
+      <div class="searchbar">
+        ${icon('search')}
+        <input type="search" id="home-search" placeholder="Search products, vendors..." autocomplete="off">
+      </div>
+    </div>
+
+    ${ev ? eventBanner(ev) : ''}
+    ${anns.length ? anns.map(a => `
+      <div class="notice info" style="margin-top:12px">${icon('bell')}<span><b>${esc(a.title)}</b> — ${esc(a.body)}</span></div>`).join('') : ''}
+
+    <section class="section">
+      <div class="section-head"><h2 class="section-title">Browse categories</h2>
+        <a class="link" href="#/explore">See all</a></div>
+      <div class="cat-row">
+        ${state.categories.slice(0, 8).map(c => `
+          <a class="cat-chip" href="#/explore?cat=${esc(c.id)}">${esc(c.name)}</a>`).join('')}
+      </div>
+    </section>
+
+    ${foodVendors.length ? `
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">Food vendors at Jalsa</h2>
+        <a class="link" href="#/explore">See all</a>
+      </div>
+      <div class="hscroll">
+        ${foodVendors.map(vendorCard).join('')}
+      </div>
+    </section>` : ''}
+
+    ${vendors.length ? `
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">Featured vendors</h2>
+        <a class="link" href="#/explore">Explore</a>
+      </div>
+      <div class="hscroll">
+        ${vendors.map(vendorCard).join('')}
+      </div>
+    </section>` : ''}
+
+    <section class="section">
+      <div class="section-head"><h2 class="section-title">Discover products</h2></div>
+      ${products.length
+        ? `<div class="product-grid">${products.map(productCard).join('')}</div>`
+        : emptyState('box', 'No products yet',
+            'Approved vendors will appear here as soon as they publish their catalogue.',
+            state.vendor ? '' : `<a class="btn btn-primary" href="#/vendor-signup">Become a vendor</a>`)}
+    </section>
+
+    <div class="foot-note">
+      Jalsa Market · Discover. Connect. Shop at Jalsa.<br>
+      <a href="#/privacy">Privacy</a> · <a href="${supportLink('Assalamu Alaikum, I need help with Jalsa Market.')}" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>`;
+
+  $('#home-search')?.addEventListener('input', debounce((e) => {
+    const q = e.target.value.trim();
+    if (q.length >= 2) location.hash = `#/explore?q=${encodeURIComponent(q)}`;
+  }, 500));
+}
+
+function eventBanner(ev) {
+  const start = new Date(ev.starts_on + 'T00:00:00');
+  const days = Math.max(0, Math.ceil((start - Date.now()) / 86400000));
+  const started = days === 0;
+  return `
+  <div class="event-banner" style="margin-top:14px">
+    <div class="eb-body">
+      <h4>${esc(ev.name || 'Jalsa')} ${started ? 'is here' : 'is coming'}</h4>
+      <p>${esc(new Date(ev.starts_on).toLocaleDateString('en-NG', { day: 'numeric', month: 'long' }))}
+         – ${esc(new Date(ev.ends_on).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' }))}</p>
+      ${!started ? `<div class="countdown">
+        <div><b>${days}</b><small>days</small></div>
+        <div><b>${Math.floor(days / 7)}</b><small>weeks</small></div>
+      </div>` : `<div class="notice info" style="margin-top:10px">${icon('clock')}<span>Vendors are open — check stall numbers and preorder details on each storefront.</span></div>`}
+    </div>
+  </div>`;
+}
+
+function vendorCard(v) {
+  const cover = v.cover_path ? storageUrl(v.cover_path) : null;
+  const logo = v.logo_path ? storageUrl(v.logo_path) : null;
+  return `
+  <a class="vendor-card" href="#/store/${esc(v.slug)}">
+    <div class="vc-media">
+      ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async">` : ''}
+      <div class="vc-logo">${logo ? `<img src="${esc(logo)}" alt="" loading="lazy">` : esc(initials(v.business_name))}</div>
+    </div>
+    <div class="vc-body">
+      <h4>${esc(v.business_name)}</h4>
+      <div class="vc-meta">
+        <span>${esc(v.business_category || v.categories?.name || 'Vendor')}</span>
+        ${v.stall_number ? `<span>· Stall ${esc(v.stall_number)}</span>` : ''}
+      </div>
+    </div>
+  </a>`;
+}
+
+/* ------------------------------------------------------------
+   11. RENDER — EXPLORE
+   ------------------------------------------------------------ */
+async function renderExplore() {
+  const view = $('#view');
+  const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  const q = params.get('q') || '';
+  const cat = params.get('cat') || '';
+  const tab = params.get('tab') || 'products';
+  const sort = params.get('sort') || 'recent';
+
+  view.innerHTML = `
+    <div class="container">
+      <div style="padding:18px 0 12px">
+        <div class="searchbar">
+          ${icon('search')}
+          <input type="search" id="explore-search" value="${esc(q)}" placeholder="Search products, vendors..." autocomplete="off">
+        </div>
+      </div>
+      <div class="cat-row" style="margin-bottom:14px">
+        <a class="cat-chip ${!cat ? 'active' : ''}" href="#/explore?tab=${tab}">All</a>
+        ${state.categories.map(c => `
+          <a class="cat-chip ${cat === c.id ? 'active' : ''}" href="#/explore?cat=${esc(c.id)}&tab=${tab}&sort=${sort}">${esc(c.name)}</a>`).join('')}
+      </div>
+      <div class="row-between" style="margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div class="segmented">
+          <button class="${tab === 'products' ? 'on' : ''}" data-action="explore-tab" data-tab="products">Products</button>
+          <button class="${tab === 'vendors' ? 'on' : ''}" data-action="explore-tab" data-tab="vendors">Vendors</button>
+        </div>
+        ${tab === 'products' ? `
+        <select class="select" id="sort-select" style="width:auto;height:38px;padding:0 38px 0 12px;font-size:.79rem">
+          <option value="recent" ${sort === 'recent' ? 'selected' : ''}>Recently added</option>
+          <option value="price_asc" ${sort === 'price_asc' ? 'selected' : ''}>Price: low to high</option>
+          <option value="price_desc" ${sort === 'price_desc' ? 'selected' : ''}>Price: high to low</option>
+        </select>` : ''}
+      </div>
+      <div id="explore-results">${skeletonGrid(6)}</div>
+    </div>`;
+
+  const results = $('#explore-results');
+  if (tab === 'vendors') {
+    const vendors = await api.vendors({ limit: 40 });
+    const filtered = q ? vendors.filter(v => v.business_name.toLowerCase().includes(q.toLowerCase())) : vendors;
+    results.innerHTML = filtered.length
+      ? `<div class="stack">${filtered.map(v => `
+          <a class="list-item" href="#/store/${esc(v.slug)}" style="margin-bottom:0">
+            <div class="li-ico" style="background:var(--green-soft);color:var(--green);font-weight:700">
+              ${esc(initials(v.business_name))}
+            </div>
+            <div class="li-body">
+              <h4>${esc(v.business_name)}</h4>
+              <p>${esc(v.business_category || 'Vendor')}${v.stall_number ? ' · Stall ' + esc(v.stall_number) : ''}</p>
+            </div>
+            <span class="li-arrow">${icon('chev')}</span>
+          </a>`).join('')}</div>`
+      : emptyState('store', 'No vendors found', 'Try a different search term.');
+  } else {
+    const products = await api.products({ size: 24, category: cat || null, search: q, sort });
+    results.innerHTML = products.length
+      ? `<div class="product-grid">${products.map(productCard).join('')}</div>`
+      : emptyState('search', 'Nothing matched', 'Try different keywords or another category.');
+  }
+
+  $('#explore-search')?.addEventListener('input', debounce((e) => {
+    const val = e.target.value.trim();
+    const p = new URLSearchParams(location.hash.split('?')[1] || '');
+    val ? p.set('q', val) : p.delete('q');
+    location.hash = `#/explore?${p.toString()}`;
+  }, 450));
+
+  $('#sort-select')?.addEventListener('change', (e) => {
+    const p = new URLSearchParams(location.hash.split('?')[1] || '');
+    p.set('sort', e.target.value);
+    location.hash = `#/explore?${p.toString()}`;
+  });
+}
+
+/* ------------------------------------------------------------
+   12. RENDER — PRODUCT DETAIL
+   ------------------------------------------------------------ */
+async function renderProduct(id) {
+  const view = $('#view');
+  const p = await api.product(id);
+  if (!p) {
+    view.innerHTML = `<div class="container">${emptyState('alert', 'Product not found', 'This product may have been removed or is no longer available.', '<a class="btn btn-primary" href="#/explore">Browse products</a>')}</div>`;
+    return;
+  }
+  api.trackView('product', p.id);
+  const saved = state.saved.has(p.id);
+  const imgs = p.images.length ? p.images : [];
+  const vendor = p.vendors || {};
+
+  view.innerHTML = `
+  <div class="container" style="padding-top:16px">
+    <button class="icon-btn" data-action="back" aria-label="Back" style="margin-bottom:12px">${icon('chevL')}</button>
+    <div class="detail-grid">
+      <div class="detail-media-wrap">
+        <div class="detail-media" id="detail-media">
+          ${imgs.length ? `<img src="${esc(imgs[0])}" alt="${esc(p.name)}" id="detail-img">` : `<div class="ph" style="display:grid;place-items:center;height:100%">${icon('image')}</div>`}
+        </div>
+        ${imgs.length > 1 ? `<div class="detail-thumbs">
+          ${imgs.map((src, i) => `<button class="${i === 0 ? 'on' : ''}" data-action="thumb" data-src="${esc(src)}"><img src="${esc(src)}" alt="" loading="lazy"></button>`).join('')}
+        </div>` : ''}
+      </div>
+
+      <div>
+        <div class="row" style="gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          ${p.is_preorder ? '<span class="status pending">Preorder</span>' : ''}
+          <span class="status ${p.is_available === false ? 'suspended' : 'approved'}">${p.is_available === false ? 'Unavailable' : 'Available'}</span>
+        </div>
+        <h1 class="display" style="font-size:1.8rem;margin-bottom:8px">${esc(p.name)}</h1>
+        <div class="price-lg">${money(p.price)}</div>
+
+        <a class="list-item" href="#/store/${esc(p.vendor_slug)}" style="margin-top:18px">
+          <div class="li-ico" style="background:var(--green-soft);color:var(--green);font-weight:700">${esc(initials(p.vendor_name))}</div>
+          <div class="li-body">
+            <h4>${esc(p.vendor_name)}</h4>
+            <p>${vendor.stall_number ? 'Stall ' + esc(vendor.stall_number) : 'View storefront'}</p>
+          </div>
+          <span class="li-arrow">${icon('chev')}</span>
+        </a>
+
+        ${p.description ? `<div class="panel" style="margin-top:14px">
+          <h4 style="font-size:.79rem;color:var(--muted);margin-bottom:7px">Description</h4>
+          <p style="font-size:.86rem;line-height:1.68;color:var(--text);white-space:pre-wrap">${esc(p.description)}</p>
+        </div>` : ''}
+
+        ${vendor.preorder_details ? `<div class="notice info" style="margin-top:12px">${icon('clock')}<span><b>Preorder:</b> ${esc(vendor.preorder_details)}</span></div>` : ''}
+        ${vendor.collection_info ? `<div class="notice" style="margin-top:10px">${icon('pin')}<span><b>Collection:</b> ${esc(vendor.collection_info)}</span></div>` : ''}
+
+        <div class="sticky-actions" style="margin-top:20px">
+          <div class="row" style="gap:9px">
+            <div class="qty" style="margin:0;height:44px">
+              <button data-action="qty-step" data-dir="-1" aria-label="Decrease">${icon('minus')}</button>
+              <span id="detail-qty">1</span>
+              <button data-action="qty-step" data-dir="1" aria-label="Increase">${icon('plus')}</button>
+            </div>
+            <button class="btn btn-primary btn-lg" style="flex:1" data-action="detail-add" data-id="${esc(p.id)}" ${p.is_available === false ? 'disabled' : ''}>
+              Add to cart
+            </button>
+            <button class="btn btn-ghost btn-lg ${saved ? 'on' : ''}" data-action="toggle-save" data-id="${esc(p.id)}" aria-label="Save">${icon('saved')}</button>
+            <button class="btn btn-ghost btn-lg" data-action="share-product" data-id="${esc(p.id)}" data-name="${esc(p.name)}" aria-label="Share">${icon('share')}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="height:36px"></div>
+  </div>`;
+}
+
+/* ------------------------------------------------------------
+   13. RENDER — STOREFRONT
+   ------------------------------------------------------------ */
+async function renderStore(slug) {
+  const view = $('#view');
+  const v = await api.vendorBySlug(slug);
+  if (!v) {
+    view.innerHTML = `<div class="container">${emptyState('store', 'Store not found', 'This storefront does not exist or has not been verified yet.', '<a class="btn btn-primary" href="#/explore">Explore vendors</a>')}</div>`;
+    return;
+  }
+  api.trackView('storefront', v.id);
+  const products = await api.vendorProducts(v.id);
+  const cover = v.cover_path ? storageUrl(v.cover_path) : null;
+  const logo = v.logo_path ? storageUrl(v.logo_path) : null;
+
+  view.innerHTML = `
+  <div class="container" style="padding-top:14px">
+    <button class="icon-btn" data-action="back" aria-label="Back" style="margin-bottom:10px">${icon('chevL')}</button>
+    <div class="store-cover">${cover ? `<img src="${esc(cover)}" alt="" loading="lazy">` : ''}</div>
+    <div class="store-head">
+      <div class="store-logo">${logo ? `<img src="${esc(logo)}" alt="">` : esc(initials(v.business_name))}</div>
+      <div class="store-title">
+        <h1>${esc(v.business_name)}</h1>
+        <div class="row" style="gap:8px;margin-top:5px;flex-wrap:wrap">
+          <span class="status approved">Verified</span>
+          <span class="sub">${esc(v.business_category || '')}</span>
+          ${v.stall_number ? `<span class="sub">· Stall ${esc(v.stall_number)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+
+    ${v.description ? `<p style="font-size:.87rem;line-height:1.7;color:var(--muted);margin-top:16px">${esc(v.description)}</p>` : ''}
+
+    <div class="row" style="gap:9px;margin-top:16px;flex-wrap:wrap">
+      <a class="btn btn-primary" href="${waLink(v.whatsapp_number, `Assalamu Alaikum ${v.business_name}, I found your store on Jalsa Market.`)}" target="_blank" rel="noopener" data-action="wa-contact" data-vendor="${esc(v.id)}">
+        ${icon('whatsapp')} WhatsApp
+      </a>
+      <button class="btn btn-ghost" data-action="share-store" data-slug="${esc(v.slug)}" data-name="${esc(v.business_name)}">
+        ${icon('share')} Share store
+      </button>
+    </div>
+
+    ${v.preorder_details ? `<div class="notice info" style="margin-top:14px">${icon('clock')}<span><b>Preorders:</b> ${esc(v.preorder_details)}</span></div>` : ''}
+    ${v.collection_info ? `<div class="notice" style="margin-top:10px">${icon('pin')}<span><b>Collection:</b> ${esc(v.collection_info)}</span></div>` : ''}
+
+    <section class="section">
+      <div class="section-head"><h2 class="section-title">Products (${products.length})</h2></div>
+      ${products.length
+        ? `<div class="product-grid">${products.map(productCard).join('')}</div>`
+        : emptyState('box', 'No products yet', 'This vendor has not published any products.')}
+    </section>
+    <div style="height:30px"></div>
+  </div>`;
+}
+
+/* ------------------------------------------------------------
+   14. RENDER — SAVED
+   ------------------------------------------------------------ */
+async function renderSaved() {
+  const view = $('#view');
+  const list = await api.savedList();
+  view.innerHTML = `
+  <div class="container">
+    <div style="padding:22px 0 16px">
+      <h1 class="display" style="font-size:1.7rem">Saved</h1>
+      <p class="sub">Products you want to come back to.</p>
+    </div>
+    ${list.length
+      ? `<div class="product-grid">${list.map(productCard).join('')}</div>`
+      : emptyState('saved', 'Nothing saved yet',
+          'Tap the heart on any product to save it for later.',
+          '<a class="btn btn-primary" href="#/explore">Explore products</a>')}
+    <div style="height:30px"></div>
+  </div>`;
+}
+
+/* ------------------------------------------------------------
+   15. RENDER — CART
+   ------------------------------------------------------------ */
+async function renderCart() {
+  const view = $('#view');
+  await refreshCart();
+  const groups = new Map();
+  for (const item of state.cart) {
+    const vid = item.vendor?.id || item.product?.vendor_id || 'unknown';
+    if (!groups.has(vid)) groups.set(vid, { vendor: item.vendor, items: [] });
+    groups.get(vid).items.push(item);
+  }
+  const total = state.cart.reduce((s, i) => s + (i.price_snapshot || i.product?.price || 0) * i.quantity, 0);
+
+  view.innerHTML = `
+  <div class="container">
+    <div style="padding:22px 0 16px">
+      <h1 class="display" style="font-size:1.7rem">Your cart</h1>
+      <p class="sub">${state.cart.length ? state.cart.length + ' item(s) from ' + groups.size + ' vendor(s)' : 'Add products from any vendor'}</p>
+    </div>
+
+    ${state.cart.length ? `
+      ${[...groups.values()].map(g => `
+        <div class="cart-group">
+          <div class="cg-head">
+            <div class="avatar" style="width:28px;height:28px;font-size:.68rem">${esc(initials(g.vendor?.business_name || 'V'))}</div>
+            <h4>${esc(g.vendor?.business_name || 'Vendor')}</h4>
+            ${g.vendor?.stall_number ? `<span class="sub" style="font-size:.72rem">Stall ${esc(g.vendor.stall_number)}</span>` : ''}
+          </div>
+          ${g.items.map(i => `
+            <div class="cg-item">
+              <div class="cg-thumb">${i.product?.image ? `<img src="${esc(i.product.image)}" alt="" loading="lazy">` : ''}</div>
+              <div class="cg-info">
+                <h5>${esc(i.product?.name || 'Product')}</h5>
+                <div class="pr">${money(i.price_snapshot || i.product?.price)}</div>
+                <div class="qty">
+                  <button data-action="cart-qty" data-id="${esc(i.id)}" data-qty="${i.quantity - 1}" aria-label="Decrease">${icon('minus')}</button>
+                  <span>${i.quantity}</span>
+                  <button data-action="cart-qty" data-id="${esc(i.id)}" data-qty="${i.quantity + 1}" aria-label="Increase">${icon('plus')}</button>
+                </div>
+              </div>
+              <button class="icon-btn" data-action="cart-remove" data-id="${esc(i.id)}" aria-label="Remove" style="align-self:flex-start">${icon('trash')}</button>
+            </div>`).join('')}
+          <div class="cg-foot">
+            <span class="sub-total">Vendor subtotal <b>${money(g.items.reduce((s, i) => s + (i.price_snapshot || i.product?.price || 0) * i.quantity, 0))}</b></span>
+            <button class="btn btn-primary btn-sm" data-action="checkout-vendor" data-vendor="${esc(g.vendor?.id || '')}">
+              ${icon('whatsapp')} Order on WhatsApp
+            </button>
+          </div>
+        </div>`).join('')}
+
+      <div class="cart-summary" style="margin-top:6px">
+        <div class="row-between"><span class="sub">Items</span><span>${state.cart.reduce((s, i) => s + i.quantity, 0)}</span></div>
+        <div class="row-between"><span class="sub">Vendors</span><span>${groups.size}</span></div>
+        <div class="row-between total"><span>Combined value</span><span>${money(total)}</span></div>
+        <p class="sub" style="font-size:.72rem;margin-top:12px;line-height:1.6">
+          Each vendor is contacted separately on WhatsApp. Jalsa Market does not process payments or deliveries.
+        </p>
+      </div>
+      <button class="btn btn-ghost btn-block" style="margin-top:12px" data-action="go-explore">Continue browsing</button>
+    ` : emptyState('cart', 'Your cart is empty',
+        'Browse products from any vendor and add them here. You can order from several vendors at once.',
+        '<a class="btn btn-primary" href="#/explore">Start shopping</a>')}
+
+    <div style="height:30px"></div>
+  </div>`;
+}
+
+/* ------------------------------------------------------------
+   16. RENDER — ME / SETTINGS / PRIVACY
+   ------------------------------------------------------------ */
+function renderMe() {
+  const p = state.profile || {};
+  const view = $('#view');
+  view.innerHTML = `
+  <div class="container">
+    <div style="padding:26px 0 20px;display:flex;align-items:center;gap:14px">
+      <div class="avatar" style="width:56px;height:56px;font-size:1.15rem">${esc(initials(p.full_name))}</div>
+      <div>
+        <h1 style="font-size:1.12rem">${esc(p.full_name || 'Guest')}</h1>
+        <p class="sub">${esc(p.phone || 'No phone number')}</p>
+      </div>
+    </div>
+
+    ${!state.vendor ? `
+    <div class="panel" style="border-color:rgba(35,134,75,.35);background:linear-gradient(135deg,var(--green-soft),transparent 70%),var(--surface)">
+      <h4 style="font-size:.92rem">Sell at Jalsa</h4>
+      <p class="sub" style="margin-top:5px;font-size:.79rem">Create a storefront, showcase products and reach customers before the event.</p>
+      <a class="btn btn-primary btn-sm" style="margin-top:13px" href="#/vendor-signup" data-action="vendor-apply">Open a storefront</a>
+    </div>` : `
+    <div class="panel">
+      <div class="row-between">
+        <div>
+          <h4 style="font-size:.92rem">${esc(state.vendor.business_name)}</h4>
+          <span class="status ${esc(state.vendor.status)}" style="margin-top:6px">${esc(state.vendor.status)}</span>
+        </div>
+        <a class="btn btn-sm btn-ghost" href="#/vendor">Manage</a>
+      </div>
+    </div>`}
+
+    <div style="margin-top:14px">
+      ${listItem('saved', 'Saved products', 'Items you want to revisit', '#/saved')}
+      ${listItem('cart', 'Your cart', 'Products from multiple vendors', '#/cart')}
+      ${listItem('settings', 'Settings', 'Theme, text size and preferences', '#/settings')}
+      ${listItem('shield', 'Privacy', 'How your information is used', '#/privacy')}
+      ${listItem('flag', 'Report a problem', 'Contact the Jalsa Market team', supportLink('Assalamu Alaikum, I would like to report a problem on Jalsa Market.'))}
+      ${listItem('whatsapp', 'Contact support', WA_SUPPORT_DISPLAY, supportLink('Assalamu Alaikum, I need help with Jalsa Market.'))}
+    </div>
+
+    <button class="btn btn-danger btn-block" style="margin-top:18px" data-action="logout">${icon('logout')} Log out</button>
+    <div class="foot-note">Jalsa Market · v1.0</div>
+  </div>`;
+}
+
+function listItem(ico, title, sub, href, external = false) {
+  const attrs = external || href.startsWith('http')
+    ? `href="${href}" target="_blank" rel="noopener"` : `href="${href}"`;
+  return `<a class="list-item" ${attrs}>
+    <div class="li-ico">${icon(ico)}</div>
+    <div class="li-body"><h4>${esc(title)}</h4><p>${esc(sub)}</p></div>
+    <span class="li-arrow">${icon(href.startsWith('http') ? 'external' : 'chev')}</span>
+  </a>`;
+}
+
+function renderSettings() {
+  const view = $('#view');
+  view.innerHTML = `
+  <div class="container">
+    <div style="padding:22px 0 18px">
+      <button class="icon-btn" data-action="back" aria-label="Back" style="margin-bottom:10px">${icon('chevL')}</button>
+      <h1 class="display" style="font-size:1.7rem">Settings</h1>
+    </div>
+
+    <div class="panel">
+      <h4 style="font-size:.86rem;margin-bottom:12px">Appearance</h4>
+      <div class="field">
+        <label class="label">Theme</label>
+        <div class="segmented" style="width:100%">
+          ${['dark', 'light', 'system'].map(t => `
+            <button style="flex:1" class="${state.prefs.theme === t ? 'on' : ''}" data-action="set-theme" data-theme="${t}">
+              ${t[0].toUpperCase() + t.slice(1)}
+            </button>`).join('')}
+        </div>
+      </div>
+      <div class="field" style="margin-top:16px">
+        <label class="label">Text size</label>
+        <div class="segmented" style="width:100%">
+          ${[['md', 'Default'], ['lg', 'Large'], ['xl', 'Extra large']].map(([v, l]) => `
+            <button style="flex:1" class="${state.prefs.textsize === v ? 'on' : ''}" data-action="set-textsize" data-size="${v}">
+              ${l}
+            </button>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h4 style="font-size:.86rem;margin-bottom:6px">Notifications</h4>
+      <label class="check">
+        <input type="checkbox" data-action="toggle-notify" ${state.prefs.notify ? 'checked' : ''}>
+        <span>Show me Jalsa announcements and vendor updates inside the app.</span>
+      </label>
+    </div>
+
+    <div class="panel">
+      <h4 style="font-size:.86rem;margin-bottom:8px">Privacy</h4>
+      <p class="sub" style="font-size:.8rem;line-height:1.65">
+        Your phone number is used only so vendors can respond to your WhatsApp enquiries.
+        It is never displayed publicly or shared with other customers.
+      </p>
+      <a class="btn btn-ghost btn-sm" style="margin-top:12px" href="#/privacy">Read privacy policy</a>
+    </div>
+    <div style="height:30px"></div>
+  </div>`;
+}
+
+function renderPrivacy() {
+  if (state.profile) {
+    $('#auth').classList.add('hide');
+    $('#app').classList.remove('hide');
+    renderHeader(); renderTabbar();
+  }
+  const body = `
+  <div class="container" style="max-width:720px">
+    <div style="padding:22px 0 18px">
+      <button class="icon-btn" data-action="back" aria-label="Back" style="margin-bottom:10px">${icon('chevL')}</button>
+      <h1 class="display" style="font-size:1.7rem">Privacy policy</h1>
+    </div>
+    <div class="stack" style="font-size:.87rem;line-height:1.75;color:var(--muted);padding-bottom:40px">
+      <p><b style="color:var(--text)">What we collect.</b> Your full name and phone number when you register. Vendors also provide business details, a description and a WhatsApp contact number.</p>
+      <p><b style="color:var(--text)">Why we collect phone numbers.</b> So that vendors can respond to your WhatsApp enquiries and orders. Your number is never shown publicly.</p>
+      <p><b style="color:var(--text)">WhatsApp marketing.</b> We only send announcements to customers who explicitly tick the consent box during registration. You can withdraw consent at any time by contacting support.</p>
+      <p><b style="color:var(--text)">Vendor information.</b> Approved vendors' business name, description, category, stall number and WhatsApp number are publicly visible. State, district and local Jamaat are shown only as business information.</p>
+      <p><b style="color:var(--text)">Analytics.</b> We record anonymous storefront views, product views and WhatsApp click events so vendors can understand interest in their store. These are click events, not confirmed purchases.</p>
+      <p><b style="color:var(--text)">Reports.</b> If you report a product or vendor, we record the public reference of the item and the reason you provide.</p>
+      <p><b style="color:var(--text)">Your information.</b> Contact support on WhatsApp at ${WA_SUPPORT_DISPLAY} to request help with your information.</p>
+    </div>
+  </div>`;
+  if (state.profile) $('#view').innerHTML = body;
+  else {
+    $('#app').classList.add('hide');
+    $('#auth').classList.remove('hide');
+    $('#auth').innerHTML = body;
+  }
+}
+
+/* ------------------------------------------------------------
+   17. RENDER — VENDOR AREA
+   ------------------------------------------------------------ */
+async function renderVendorArea(section = '') {
+  const view = $('#view');
+  if (!state.vendor) {
+    view.innerHTML = `<div class="container">${emptyState('store', 'No storefront yet',
+      'Create a vendor account to open your Jalsa Market storefront.',
+      '<a class="btn btn-primary" href="#/vendor-signup">Become a vendor</a>')}</div>`;
+    return;
+  }
+  state.mode = 'vendor';
+  renderHeader(); renderTabbar();
+
+  const v = state.vendor;
+
+  if (section === 'products') return renderVendorProducts();
+  if (section === 'storefront') return renderVendorStorefront();
+  if (section === 'profile') return renderVendorProfile();
+
+  // Dashboard
+  const products = await api.vendorProducts(v.id);
+  view.innerHTML = `
+  <div class="container">
+    <div style="padding:22px 0 16px">
+      <h1 class="display" style="font-size:1.7rem">${esc(v.business_name)}</h1>
+      <div class="row" style="gap:8px;margin-top:6px">
+        <span class="status ${esc(v.status)}">${esc(v.status)}</span>
+        <span class="sub">${esc(v.business_category || '')}</span>
+      </div>
+    </div>
+
+    ${v.status === 'pending' ? `
+      <div class="notice" style="margin-bottom:14px">${icon('alert')}
+        <span>Your store is private until verification is complete. Join the vendors group and message the administrator.</span>
+      </div>` : ''}
+
+    <div class="stat-grid">
+      <div class="stat"><b>${products.length}</b><span>Products</span></div>
+      <div class="stat"><b>${v.storefront_views ?? 0}</b><span>Storefront visits</span></div>
+      <div class="stat"><b>${v.product_views ?? 0}</b><span>Product views</span></div>
+      <div class="stat"><b>${v.whatsapp_clicks ?? 0}</b><span>WhatsApp clicks</span></div>
+    </div>
+
+    <div style="margin-top:16px">
+      ${listItem('box', 'Products', 'Add, edit and manage availability', '#/vendor/products')}
+      ${listItem('store', 'Storefront', 'Preview and share your public store', '#/vendor/storefront')}
+      ${listItem('settings', 'Business profile', 'Logo, cover and business details', '#/vendor/profile')}
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <h4 style="font-size:.86rem;margin-bottom:10px">Verification</h4>
+      <p class="sub" style="font-size:.79rem;line-height:1.65">
+        Only an administrator can approve your store. Joining the vendors group does not approve your store automatically.
+      </p>
+      <div class="row" style="gap:9px;margin-top:13px;flex-wrap:wrap">
+        <a class="btn btn-primary btn-sm" href="${esc(CONFIG.VENDOR_GROUP_URL)}" target="_blank" rel="noopener">Join vendors group</a>
+        <a class="btn btn-ghost btn-sm" href="${supportLink('Assalamu Alaikum, I would like to verify my Jalsa Market storefront: ' + v.business_name)}" target="_blank" rel="noopener">Message admin</a>
+      </div>
+    </div>
+    <div style="height:30px"></div>
+  </div>`;
+
+  if (v.status === 'pending' && !sessionStorage.getItem('jm.verified.prompt')) {
+    sessionStorage.setItem('jm.verified.prompt', '1');
+    openSheet(`
+      <h2>Your store has been created</h2>
+      <div class="sheet-body">
+        To make your store visible on Jalsa Market, please join the official Jalsa Market Vendors WhatsApp group and contact the administrator to verify your business.
+        Your store will remain private until verification is completed.
+      </div>
+      <div class="sheet-actions">
+        <a class="btn btn-primary btn-block" href="${esc(CONFIG.VENDOR_GROUP_URL)}" target="_blank" rel="noopener">Join Vendors WhatsApp Group</a>
+        <a class="btn btn-ghost btn-block" href="${supportLink('Assalamu Alaikum, I would like to verify my Jalsa Market storefront: ' + v.business_name)}" target="_blank" rel="noopener">Message Admin on WhatsApp</a>
+        <button class="btn btn-ghost btn-block" data-action="close-sheet">Later</button>
+      </div>`);
+  }
+}
+
+async function renderVendorProducts() {
+  const view = $('#view');
+  const products = await api.vendorProducts(state.vendor.id);
+  view.innerHTML = `
+  <div class="container">
+    <div class="row-between" style="padding:22px 0 16px">
+      <div>
+        <h1 class="display" style="font-size:1.7rem">Products</h1>
+        <p class="sub">${products.length} published</p>
+      </div>
+      <button class="btn btn-primary btn-sm" data-action="new-product">${icon('plus')} Add</button>
+    </div>
+    ${products.length ? `<div class="stack">${products.map(p => `
+      <div class="list-item">
+        <div class="li-ico" style="width:52px;height:52px;border-radius:11px;overflow:hidden;padding:0">
+          ${p.image ? `<img src="${esc(p.image)}" alt="" style="width:100%;height:100%;object-fit:cover">` : icon('image')}
+        </div>
+        <div class="li-body">
+          <h4>${esc(p.name)}</h4>
+          <p>${money(p.price)} · ${p.is_available ? 'Available' : 'Unavailable'}</p>
+        </div>
+        <button class="icon-btn" data-action="edit-product" data-id="${esc(p.id)}" aria-label="Edit">${icon('edit')}</button>
+      </div>`).join('')}</div>`
+      : emptyState('box', 'No products yet', 'Add your first product so customers can discover your store.',
+          '<button class="btn btn-primary" data-action="new-product">Add product</button>')}
+    <div style="height:30px"></div>
+  </div>`;
+}
+
+function renderVendorStorefront() {
+  const v = state.vendor;
+  const view = $('#view');
+  const url = `${location.origin}${location.pathname}#/store/${v.slug}`;
+  view.innerHTML = `
+  <div class="container">
+    <div style="padding:22px 0 16px">
+      <h1 class="display" style="font-size:1.7rem">Storefront</h1>
+      <p class="sub">${v.status === 'approved' ? 'Your store is live and publicly visible.' : 'Your store is private until approved.'}</p>
+    </div>
+    <div class="panel">
+      <label class="label">Public link</label>
+      <div class="row" style="margin-top:7px;gap:8px">
+        <input class="input" value="${esc(url)}" readonly onclick="this.select()">
+        <button class="btn btn-ghost btn-sm" data-action="copy" data-text="${esc(url)}">Copy</button>
+      </div>
+      <div class="row" style="gap:9px;margin-top:13px;flex-wrap:wrap">
+        <a class="btn btn-primary btn-sm" href="#/store/${esc(v.slug)}">Preview store</a>
+        <button class="btn btn-ghost btn-sm" data-action="share-store" data-slug="${esc(v.slug)}" data-name="${esc(v.business_name)}">Share</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h4 style="font-size:.86rem;margin-bottom:10px">Store details</h4>
+      <div class="stack" style="font-size:.82rem;color:var(--muted)">
+        <div class="row-between"><span>Category</span><span style="color:var(--text)">${esc(v.business_category || '—')}</span></div>
+        <div class="row-between"><span>Stall</span><span style="color:var(--text)">${esc(v.stall_number || '—')}</span></div>
+        <div class="row-between"><span>Participation</span><span style="color:var(--text)">${esc(v.participation_type || '—')}</span></div>
+        <div class="row-between"><span>WhatsApp</span><span style="color:var(--text)">${esc(v.whatsapp_number || '—')}</span></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:13px" data-action="edit-vendor">Edit details</button>
+    </div>
+    <div style="height:30px"></div>
+  </div>`;
+}
+
+function renderVendorProfile() {
+  const v = state.vendor;
+  const view = $('#view');
+  view.innerHTML = `
+  <div class="container">
+    <div style="padding:22px 0 16px">
+      <h1 class="display" style="font-size:1.7rem">Business profile</h1>
+      <p class="sub">This information appears on your public storefront.</p>
+    </div>
+    <div class="panel">
+      <h4 style="font-size:.84rem;margin-bottom:12px">Store images</h4>
+      <div class="form-grid two">
+        <div>
+          <label class="label">Logo (256×256)</label>
+          <label class="upload-box" style="margin-top:7px;display:block">
+            <input type="file" accept="image/*" class="sr-only" data-upload="logo">
+            ${icon('camera')}
+            <p>Tap to upload logo</p>
+          </label>
+        </div>
+        <div>
+          <label class="label">Cover (1200×400)</label>
+          <label class="upload-box" style="margin-top:7px;display:block">
+            <input type="file" accept="image/*" class="sr-only" data-upload="cover">
+            ${icon('image')}
+            <p>Tap to upload cover</p>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h4 style="font-size:.84rem;margin-bottom:12px">Details</h4>
+      <form id="form-vendor-edit" class="form-grid">
+        <div class="field"><label class="label">Business name</label>
+          <input class="input" name="business_name" value="${esc(v.business_name)}" required></div>
+        <div class="field"><label class="label">Description</label>
+          <textarea class="textarea" name="description">${esc(v.description || '')}</textarea></div>
+        <div class="field"><label class="label">Preorder details</label>
+          <textarea class="textarea" name="preorder_details" placeholder="e.g. Preorders close 3 days before Jalsa.">${esc(v.preorder_details || '')}</textarea></div>
+        <div class="field"><label class="label">Collection information</label>
+          <textarea class="textarea" name="collection_info" placeholder="e.g. Collect from Stall B12, Friday–Sunday.">${esc(v.collection_info || '')}</textarea></div>
+        <div class="field"><label class="label">WhatsApp number</label>
+          <input class="input" name="whatsapp_number" value="${esc(v.whatsapp_number || '')}"></div>
+        <div class="field"><label class="label">Stall number</label>
+          <input class="input" name="stall_number" value="${esc(v.stall_number || '')}"></div>
+        <button class="btn btn-primary btn-block" type="submit">Save changes</button>
+      </form>
+    </div>
+    <div style="height:30px"></div>
+  </div>`;
+
+  $('#form-vendor-edit')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const patch = Object.fromEntries(fd.entries());
+    try {
+      const { error } = await supabase.from('vendors').update(patch).eq('id', state.vendor.id);
+      if (error) throw error;
+      Object.assign(state.vendor, patch);
+      toast('Profile updated');
+      renderVendorProfile();
+    } catch (err) { toast(err.message, 'err'); }
+  });
+
+  $$('[data-upload]').forEach(input => {
+    input.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const kind = e.target.dataset.upload;
+      const preset = kind === 'logo' ? IMG_PRESETS.logo : IMG_PRESETS.cover;
+      toast('Optimising image…');
+      try {
+        const res = await uploadImage(file, preset, state.vendor.id);
+        const column = kind === 'logo' ? 'logo_path' : 'cover_path';
+        const { error } = await supabase.from('vendors').update({ [column]: res.storagePath }).eq('id', state.vendor.id);
+        if (error) throw error;
+        state.vendor[column] = res.storagePath;
+        toast(`Uploaded (${res.sizeKB} KB)`);
+        renderVendorProfile();
+      } catch (err) { toast(err.message, 'err'); }
+    });
+  });
+}
+
+/* ------------------------------------------------------------
+   18. RENDER — ADMIN
+   ------------------------------------------------------------ */
+async function renderAdmin(section = '') {
+  const app = $('#app');
+  const authEl = $('#auth');
+
+  if (!state.profile || !state.isAdmin) {
+    app.classList.add('hide');
+    authEl.classList.remove('hide');
+    authEl.innerHTML = `
+      <div class="container" style="padding-top:60px;max-width:420px">
+        <div style="text-align:center;margin-bottom:26px">
+          <div style="width:52px;margin:0 auto 14px">${logoSVG(52)}</div>
+          <h1 class="display" style="font-size:1.6rem">Administrator</h1>
+          <p class="sub" style="margin-top:6px">Restricted access</p>
+        </div>
+        <form id="form-admin" class="form-grid">
+          <div class="field"><label class="label">Username</label>
+            <input class="input" name="username" autocomplete="username" required></div>
+          <div class="field"><label class="label">Email</label>
+            <input class="input" name="email" type="email" autocomplete="email" required></div>
+          <div class="field"><label class="label">Password</label>
+            <input class="input" name="password" type="password" autocomplete="current-password" required></div>
+          <p class="field-error hide" id="a-error"></p>
+          <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+        </form>
+        <div class="foot-note"><a href="#/home">Return to Jalsa Market</a></div>
+      </div>`;
+
+    $('#form-admin')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const errEl = $('#a-error');
+      errEl.classList.add('hide');
+      try {
+        if (fd.get('username') !== CONFIG.ADMIN_PATH) throw new Error('Invalid administrator credentials.');
+        await login(fd.get('email'), fd.get('password'));
+        if (!state.isAdmin) throw new Error('This account does not have administrator access.');
+        router();
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.remove('hide');
+      }
+    });
+    return;
+  }
+
+  authEl.classList.add('hide');
+  app.classList.remove('hide');
+  renderHeader(); renderTabbar();
+
+  const view = $('#view');
+  const tabs = [
+    ['', 'Overview'], ['vendors', 'Vendor Applications'], ['customers', 'Customers'],
+    ['products', 'Products'], ['categories', 'Categories'], ['announcements', 'Announcements'],
+    ['reports', 'Reports'], ['events', 'Events'], ['settings', 'Settings']
+  ];
+
+  view.innerHTML = `
+  <div class="container">
+    <div style="padding:22px 0 14px">
+      <h1 class="display" style="font-size:1.7rem">Admin</h1>
+      <p class="sub">Jalsa Market control centre</p>
+    </div>
+    <div class="cat-row" style="margin-bottom:18px">
+      ${tabs.map(([slug, label]) => `
+        <a class="cat-chip ${(section || '') === slug ? 'active' : ''}"
+           href="#/admin${slug ? '/' + slug : ''}">${label}</a>`).join('')}
+    </div>
+    <div id="admin-body">${skeletonGrid(2)}</div>
+    <div style="height:30px"></div>
+  </div>`;
+
+  const body = $('#admin-body');
+  try {
+    if (!section) {
+      const [vendors, products, customers] = await Promise.all([
+        supabase.from('vendors').select('id,status'),
+        supabase.from('products').select('id', { count: 'exact', head: true }),
+        supabase.from('profiles').select('id', { count: 'exact', head: true })
+      ]);
+      const vlist = vendors.data || [];
+      body.innerHTML = `
+        <div class="stat-grid">
+          <div class="stat"><b>${customers.count ?? 0}</b><span>Customers</span></div>
+          <div class="stat"><b>${vlist.length}</b><span>Vendors</span></div>
+          <div class="stat"><b>${vlist.filter(v => v.status === 'approved').length}</b><span>Approved</span></div>
+          <div class="stat"><b>${vlist.filter(v => v.status === 'pending').length}</b><span>Pending</span></div>
+        </div>`;
+    }
+
+    if (section === 'vendors') {
+      const { data } = await supabase.from('vendors')
+        .select('id,business_name,slug,status,business_category,whatsapp_number,created_at')
+        .order('created_at', { ascending: false });
+      body.innerHTML = (data || []).length ? `<div class="stack">${data.map(v => `
+        <div class="list-item">
+          <div class="li-body">
+            <h4>${esc(v.business_name)}</h4>
+            <p>${esc(v.business_category || '—')} · ${esc(v.whatsapp_number || '')}</p>
+          </div>
+          <span class="status ${esc(v.status)}">${esc(v.status)}</span>
+          ${v.status !== 'approved'
+            ? `<button class="btn btn-sm btn-primary" data-action="admin-approve" data-id="${esc(v.id)}">Approve</button>`
+            : `<button class="btn btn-sm btn-ghost" data-action="admin-suspend" data-id="${esc(v.id)}">Suspend</button>`}
+        </div>`).join('')}</div>` : emptyState('users', 'No vendor applications', 'Vendor signups will appear here.');
+    }
+
+    if (section === 'products') {
+      const { data } = await supabase.from('products')
+        .select('id,name,price,is_available,vendors(business_name)')
+        .order('created_at', { ascending: false }).limit(60);
+      body.innerHTML = (data || []).length ? `<div class="stack">${data.map(p => `
+        <div class="list-item">
+          <div class="li-body">
+            <h4>${esc(p.name)}</h4>
+            <p>${money(p.price)} · ${esc(p.vendors?.business_name || '')}</p>
+          </div>
+          <button class="btn btn-sm btn-ghost" data-action="admin-hide-product" data-id="${esc(p.id)}" data-available="${p.is_available}">
+            ${p.is_available ? 'Hide' : 'Show'}
+          </button>
+        </div>`).join('')}</div>` : emptyState('box', 'No products', 'Products published by vendors will appear here.');
+    }
+
+    if (section === 'customers') {
+      const { data } = await supabase.from('profiles')
+        .select('id,full_name,phone,marketing_consent,created_at,account_status')
+        .order('created_at', { ascending: false }).limit(100);
+      body.innerHTML = `
+        <div class="row-between" style="margin-bottom:14px">
+          <p class="sub">Marketing exports include consenting customers only.</p>
+          <button class="btn btn-sm btn-ghost" data-action="export-consented">Export CSV</button>
+        </div>
+        ${(data || []).length ? `<div class="stack">${data.map(c => `
+          <div class="list-item">
+            <div class="li-body">
+              <h4>${esc(c.full_name)}</h4>
+              <p>${esc(c.phone || '—')} · joined ${timeAgo(c.created_at)}</p>
+            </div>
+            <span class="status ${c.marketing_consent ? 'approved' : 'pending'}">
+              ${c.marketing_consent ? 'Opted in' : 'No consent'}
+            </span>
+          </div>`).join('')}</div>` : emptyState('users', 'No customers yet', 'Registrations will appear here.')}`;
+    }
+
+    if (section === 'categories') {
+      const { data } = await supabase.from('categories').select('*').order('sort_order');
+      body.innerHTML = `<div class="stack">${(data || []).map(c => `
+        <div class="list-item">
+          <div class="li-body"><h4>${esc(c.name)}</h4><p>/${esc(c.slug)} · order ${c.sort_order}</p></div>
+          <span class="status ${c.is_active ? 'approved' : 'suspended'}">${c.is_active ? 'Active' : 'Hidden'}</span>
+        </div>`).join('')}</div>`;
+    }
+
+    if (section === 'announcements') {
+      const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+      body.innerHTML = `<div class="stack">${(data || []).map(a => `
+        <div class="list-item">
+          <div class="li-body"><h4>${esc(a.title)}</h4><p>${esc(a.body).slice(0, 90)}…</p></div>
+          <span class="status ${a.published_at ? 'approved' : 'pending'}">${a.published_at ? 'Published' : 'Draft'}</span>
+        </div>`).join('') || emptyState('bell', 'No announcements', 'Create announcements from the Supabase dashboard.')}</div>`;
+    }
+
+    if (section === 'reports') {
+      const { data } = await supabase.from('reports').select('*').order('created_at', { ascending: false });
+      body.innerHTML = (data || []).length ? `<div class="stack">${data.map(r => `
+        <div class="list-item">
+          <div class="li-body"><h4>${esc(r.target_type)} report</h4><p>${esc(r.reason)}</p></div>
+          <span class="status ${r.status === 'open' ? 'pending' : 'approved'}">${esc(r.status)}</span>
+        </div>`).join('')}</div>` : emptyState('flag', 'No reports', 'Customer reports will appear here.');
+    }
+
+    if (section === 'events') {
+      const { data } = await supabase.from('events').select('*').order('starts_on', { ascending: false });
+      body.innerHTML = (data || []).length ? `<div class="stack">${data.map(e => `
+        <div class="list-item">
+          <div class="li-body"><h4>${esc(e.name)}</h4>
+            <p>${esc(e.starts_on)} → ${esc(e.ends_on)}</p></div>
+          <span class="status ${e.is_active ? 'approved' : 'pending'}">${e.is_active ? 'Active' : 'Inactive'}</span>
+        </div>`).join('')}</div>` : emptyState('calendar', 'No events', 'Create the next Jalsa event in Supabase.');
+    }
+
+    if (section === 'settings') {
+      const { data } = await supabase.from('platform_settings').select('*');
+      body.innerHTML = `<div class="panel">
+        <h4 style="font-size:.86rem;margin-bottom:12px">Platform settings</h4>
+        <div class="stack" style="font-size:.82rem">
+          ${(data || []).map(s => `<div class="row-between">
+            <span class="sub">${esc(s.key)}</span>
+            <code style="color:var(--green);font-size:.78rem">${esc(JSON.stringify(s.value))}</code>
+          </div>`).join('') || '<p class="sub">No settings configured.</p>'}
+        </div>
+      </div>`;
+    }
+  } catch (err) {
+    body.innerHTML = emptyState('alert', 'Could not load data', err.message);
+  }
+}
+
+/* ------------------------------------------------------------
+   19. EVENT HANDLERS (delegated)
+   ------------------------------------------------------------ */
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+
+  /* ---- auth view switching ---- */
+  if (action === 'auth-view') { e.preventDefault(); return renderAuth(el.dataset.view); }
+
+  if (action === 'login-role') {
+    e.preventDefault();
+    state.loginRole = el.dataset.role === 'vendor' ? 'vendor' : 'user';
+    return renderAuth('login');
+  }
+
+  if (action === 'toggle-mode') {
+    e.preventDefault();
+    state.mode = state.mode === 'vendor' ? 'customer' : 'vendor';
+    location.hash = state.mode === 'vendor' ? '#/vendor' : '#/home';
+    return;
+  }
+
+  if (action === 'go-cart') { location.hash = '#/cart'; return; }
+  if (action === 'go-me')   { location.hash = '#/me'; return; }
+  if (action === 'go-explore') { location.hash = '#/explore'; return; }
+  if (action === 'back') { history.length > 1 ? history.back() : (location.hash = '#/home'); return; }
+  if (action === 'close-sheet') { closeSheet(); return; }
+
+  if (action === 'logout') {
+    e.preventDefault();
+    openSheet(`
+      <h2>Log out?</h2>
+      <div class="sheet-body">You will need to sign in again to access your cart, saved products and storefront.</div>
+      <div class="sheet-actions">
+        <button class="btn btn-danger btn-block" data-action="logout-confirm">Log out</button>
+        <button class="btn btn-ghost btn-block" data-action="close-sheet">Cancel</button>
+      </div>`);
+    return;
+  }
+  if (action === 'logout-confirm') { closeSheet(); await logout(); return; }
+
+  /* ---- saved ---- */
+  if (action === 'toggle-save') {
+    e.preventDefault();
+    if (!state.profile) return renderAuth('login');
+    try {
+      const nowSaved = await api.savedToggle(el.dataset.id);
+      nowSaved ? state.saved.add(el.dataset.id) : state.saved.delete(el.dataset.id);
+      el.classList.toggle('on', nowSaved);
+      toast(nowSaved ? 'Saved' : 'Removed from saved');
+      if (state.route.name === 'saved') renderSaved();
+    } catch (err) { toast(err.message, 'err'); }
+    return;
+  }
+
+  /* ---- product detail ---- */
+  if (action === 'thumb') {
+    $('#detail-img').src = el.dataset.src;
+    $$('.detail-thumbs button').forEach(b => b.classList.toggle('on', b === el));
+    return;
+  }
+  if (action === 'qty-step') {
+    const span = $('#detail-qty');
+    const next = Math.max(1, Math.min(99, Number(span.textContent) + Number(el.dataset.dir)));
+    span.textContent = next;
+    return;
+  }
+  if (action === 'detail-add') {
+    const qty = Number($('#detail-qty')?.textContent || 1);
+    try {
+      const p = await api.product(el.dataset.id);
+      if (!p || p.is_available === false) throw new Error('This product is currently unavailable.');
+      await api.addToCart(p, p.vendors, qty);
+      updateCartBadge();
+      toast(`Added ${qty} × ${p.name}`);
+    } catch (err) { toast(err.message, 'err'); }
+    return;
+  }
+  if (action === 'share-product') {
+    const url = `${location.origin}${location.pathname}#/product/${el.dataset.id}`;
+    return shareContent(url, el.dataset.name);
+  }
+  if (action === 'share-store') {
+    const url = `${location.origin}${location.pathname}#/store/${el.dataset.slug}`;
+    return shareContent(url, el.dataset.name);
+  }
+  if (action === 'copy') {
+    try { await navigator.clipboard.writeText(el.dataset.text); toast('Copied'); }
+    catch { toast('Could not copy', 'err'); }
+    return;
+  }
+
+  /* ---- cart ---- */
+  if (action === 'cart-qty') {
+    try { await api.setQty(el.dataset.id, Number(el.dataset.qty)); renderCart(); updateCartBadge(); }
+    catch (err) { toast(err.message, 'err'); }
+    return;
+  }
+  if (action === 'cart-remove') {
+    try { await api.setQty(el.dataset.id, 0); renderCart(); updateCartBadge(); toast('Removed'); }
+    catch (err) { toast(err.message, 'err'); }
+    return;
+  }
+  if (action === 'checkout-vendor') {
+    const vendorId = el.dataset.vendor;
+    const items = state.cart.filter(i => (i.vendor?.id || i.product?.vendor_id) === vendorId);
+    if (!items.length) return;
+    const vendor = items[0].vendor || {};
+    const productIds = items.map(i => i.product_id);
+
+    // Re-validate live prices and availability before checkout
+    let fresh = [];
+    try {
+      const { data } = await supabase.from('products')
+        .select('id,name,price,is_available').in('id', productIds);
+      fresh = data || [];
+    } catch (_) {}
+
+    const unavailable = fresh.filter(f => f.is_available === false);
+    if (unavailable.length) {
+      toast(`${unavailable[0].name} is no longer available.`, 'err');
+      return;
+    }
+
+    const lines = items.map(i => {
+      const live = fresh.find(f => f.id === i.product_id);
+      const price = live?.price ?? i.price_snapshot ?? i.product?.price ?? 0;
+      return { name: i.product?.name || 'Product', qty: i.quantity, price, line: price * i.quantity };
+    });
+    const subtotal = lines.reduce((s, l) => s + l.line, 0);
+
+    const message =
+`*Jalsa Market — Order Enquiry*
+${vendor.business_name || 'Vendor'}${vendor.stall_number ? ` · Stall ${vendor.stall_number}` : ''}
+
+*Customer:* ${state.profile.full_name}
+*Phone:* ${state.profile.phone || '—'}
+
+*Items*
+${lines.map((l, i) => `${i + 1}. ${l.name} × ${l.qty} — ${money(l.line)}`).join('\n')}
+
+*Vendor subtotal:* ${money(subtotal)}
+${vendor.preorder_details ? `\n*Preorder:* ${vendor.preorder_details}` : ''}
+${vendor.collection_info ? `\n*Collection:* ${vendor.collection_info}` : ''}
+
+Sent from Jalsa Market`;
+
+    api.trackWhatsApp({
+      vendor_id: vendorId,
+      customer_id: state.profile.id,
+      click_type: 'checkout',
+      item_count: items.reduce((s, i) => s + i.quantity, 0),
+      subtotal
+    });
+
+    window.open(waLink(vendor.whatsapp_number, message), '_blank', 'noopener');
+    toast('Opening WhatsApp — this is an enquiry, not a confirmed order.');
+    return;
+  }
+
+  /* ---- explore ---- */
+  if (action === 'explore-tab') {
+    const p = new URLSearchParams(location.hash.split('?')[1] || '');
+    p.set('tab', el.dataset.tab);
+    location.hash = `#/explore?${p.toString()}`;
+    return;
+  }
+
+  /* ---- preferences ---- */
+  if (action === 'set-theme')   { state.prefs.theme = el.dataset.theme; savePrefs(); renderSettings(); return; }
+  if (action === 'set-textsize'){ state.prefs.textsize = el.dataset.size; savePrefs(); renderSettings(); return; }
+
+  /* ---- vendor ---- */
+  if (action === 'new-product' || action === 'edit-product') {
+    return openProductEditor(el.dataset.id);
+  }
+
+  /* ---- admin ---- */
+  if (action === 'admin-approve') {
+    await supabase.from('vendors').update({ status: 'approved', verified_at: new Date().toISOString() }).eq('id', el.dataset.id);
+    await supabase.from('vendor_verification_logs').insert({ vendor_id: el.dataset.id, action: 'approved' });
+    toast('Vendor approved');
+    renderAdmin('vendors');
+    return;
+  }
+  if (action === 'admin-suspend') {
+    await supabase.from('vendors').update({ status: 'suspended' }).eq('id', el.dataset.id);
+    await supabase.from('vendor_verification_logs').insert({ vendor_id: el.dataset.id, action: 'suspended' });
+    toast('Vendor suspended');
+    renderAdmin('vendors');
+    return;
+  }
+  if (action === 'admin-hide-product') {
+    await supabase.from('products').update({ is_available: el.dataset.available !== 'true' }).eq('id', el.dataset.id);
+    toast('Product updated');
+    renderAdmin('products');
+    return;
+  }
+  if (action === 'export-consented') {
+    const { data } = await supabase.from('profiles')
+      .select('full_name,phone,created_at').eq('marketing_consent', true);
+    if (!data?.length) return toast('No consented customers yet', 'err');
+    const csv = 'Name,Phone,Registered\n' +
+      data.map(r => `"${(r.full_name || '').replace(/"/g, '""')}","${r.phone || ''}","${r.created_at}"`).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `jalsa-marketing-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Export downloaded');
+    return;
+  }
+});
+
+/* Save-sheet helper */
+function shareContent(url, title) {
+  if (navigator.share) {
+    navigator.share({ title: title || 'Jalsa Market', url }).catch(() => {});
+  } else {
+    openSheet(`
+      <h2>Share</h2>
+      <div class="sheet-body">Send this link to a friend on WhatsApp or copy it.</div>
+      <div class="sheet-actions">
+        <a class="btn btn-primary btn-block" href="https://wa.me/?text=${encodeURIComponent((title || 'Jalsa Market') + ' — ' + url)}" target="_blank" rel="noopener">Share on WhatsApp</a>
+        <button class="btn btn-ghost btn-block" data-action="copy" data-text="${esc(url)}">Copy link</button>
+        <button class="btn btn-ghost btn-block" data-action="close-sheet">Cancel</button>
+      </div>`);
+  }
+}
+
+/* Product editor sheet */
+async function openProductEditor(id) {
+  const isEdit = Boolean(id);
+  let product = null;
+  if (isEdit) {
+    const { data } = await supabase.from('products').select('*').eq('id', id).maybeSingle();
+    product = data;
+  }
+  openSheet(`
+    <h2>${isEdit ? 'Edit product' : 'New product'}</h2>
+    <form id="form-product" class="form-grid" style="margin-top:14px">
+      <div class="field"><label class="label">Product name</label>
+        <input class="input" name="name" required value="${esc(product?.name || '')}"></div>
+      <div class="field"><label class="label">Price (₦)</label>
+        <input class="input" name="price" type="number" min="0" step="0.01" required value="${esc(product?.price || '')}"></div>
+      <div class="field"><label class="label">Description</label>
+        <textarea class="textarea" name="description">${esc(product?.description || '')}</textarea></div>
+      <div class="field"><label class="label">Product image</label>
+        <label class="upload-box" style="display:block">
+          <input type="file" accept="image/*" class="sr-only" id="product-image-input">
+          ${icon('camera')}<p>Tap to upload (auto-optimised)</p>
+        </label>
+        <div class="progress hide" id="upload-progress"><i></i></div>
+      </div>
+      <label class="check"><input type="checkbox" name="is_available" ${product?.is_available !== false ? 'checked' : ''}>
+        <span>Available for purchase</span></label>
+      <label class="check"><input type="checkbox" name="is_preorder" ${product?.is_preorder ? 'checked' : ''}>
+        <span>Accepting preorders for this product</span></label>
+      <div class="row" style="gap:9px">
+        <button class="btn btn-primary" type="submit" style="flex:1">${isEdit ? 'Save' : 'Create'}</button>
+        <button class="btn btn-ghost" type="button" data-action="close-sheet">Cancel</button>
+      </div>
+    </form>`);
+
+  let uploadedPath = null;
+  $('#product-image-input')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const bar = $('#upload-progress');
+    bar.classList.remove('hide');
+    try {
+      const res = await uploadImage(file, IMG_PRESETS.product, state.vendor.id, (pct) => {
+        bar.querySelector('i').style.width = pct + '%';
+      });
+      uploadedPath = res.storagePath;
+      toast(`Image ready (${res.sizeKB} KB)`);
+    } catch (err) { toast(err.message, 'err'); }
+  });
+
+  $('#form-product')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const payload = {
+      vendor_id: state.vendor.id,
+      name: fd.get('name'),
+      price: Number(fd.get('price')),
+      description: fd.get('description') || null,
+      is_available: fd.get('is_available') === 'on',
+      is_preorder: fd.get('is_preorder') === 'on'
+    };
+    try {
+      let productId = id;
+      if (isEdit) {
+        const { error } = await supabase.from('products').update(payload).eq('id', id);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from('products').insert(payload).select('id').single();
+        if (error) throw error;
+        productId = data.id;
+      }
+      if (uploadedPath) {
+        await supabase.from('product_images').insert({
+          product_id: productId, storage_path: uploadedPath, sort_order: 0
+        });
+      }
+      closeSheet();
+      toast(isEdit ? 'Product updated' : 'Product created');
+      renderVendorProducts();
+    } catch (err) { toast(err.message, 'err'); }
+  });
+}
+
+/* ------------------------------------------------------------
+   20. FORM SUBMISSIONS
+   ------------------------------------------------------------ */
+document.addEventListener('submit', async (e) => {
+  const form = e.target;
+
+  if (form.id === 'form-customer') {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const errEl = $('#c-error');
+    errEl.classList.add('hide');
+    const btn = form.querySelector('button[type=submit]');
+    btn.disabled = true;
+    try {
+      await customerSignup({
+        email: fd.get('email').trim(),
+        fullName: fd.get('full_name').trim(),
+        phone: fd.get('phone').trim(),
+        consent: fd.get('consent') === 'on'
+      });
+      location.hash = '#/home';
+      await router();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hide');
+    } finally { btn.disabled = false; }
+    return;
+  }
+
+  if (form.id === 'form-vendor') {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const errEl = $('#v-error');
+    errEl.classList.add('hide');
+    const btn = form.querySelector('button[type=submit]');
+    btn.disabled = true;
+    try {
+      await vendorSignup(Object.fromEntries(fd.entries()));
+      location.hash = '#/vendor';
+      await router();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hide');
+    } finally { btn.disabled = false; }
+    return;
+  }
+
+  if (form.id === 'form-login') {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const errEl = $('#l-error');
+    errEl.classList.add('hide');
+    const btn = form.querySelector('button[type=submit]');
+    btn.disabled = true;
+    try {
+      await loginByNameAndPhone(
+        state.loginRole,
+        fd.get('name').trim(),
+        fd.get('phone').trim()
+      );
+      location.hash = state.loginRole === 'vendor' ? '#/vendor' : '#/home';
+      await router();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hide');
+    } finally {
+      btn.disabled = false;
+    }
+    return;
+  }
+});
+
+document.addEventListener('change', (e) => {
+  if (e.target.dataset.action === 'toggle-notify') {
+    state.prefs.notify = e.target.checked;
+    savePrefs();
+    toast(e.target.checked ? 'Notifications on' : 'Notifications off');
+  }
+});
+
+/* ------------------------------------------------------------
+   21. BOOT
+   ------------------------------------------------------------ */
+async function boot() {
+  loadPrefs();
+
+  // Normalise /admin path → hash route
+  if (/\/admin\/?$/.test(location.pathname) && !location.hash) {
+    location.replace(location.pathname.replace(/\/admin\/?$/, '/') + '#/admin');
+    return;
+  }
+
+  // Splash
+  await new Promise(r => setTimeout(r, CONFIG.SPLASH_MS));
+  $('#splash').classList.add('gone');
+
+  // Public config (categories + event) can load without a session
+  if (supabase) {
+    [state.categories, state.activeEvent] = await Promise.all([api.categories(), api.activeEvent()]);
+  }
+
+  let authed = false;
+  try { authed = await restoreSession(); } catch (err) { console.warn('Session restore failed', err); }
+
+  if (authed) {
+    $('#auth').classList.add('hide');
+    $('#app').classList.remove('hide');
+    await router();
+  } else {
+    renderAuth('login');
+  }
+
+  state.booted = true;
+
+  // Service worker
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+
+window.addEventListener('hashchange', () => { if (state.booted) router(); });
+window.addEventListener('online', () => toast('Back online'));
+window.addEventListener('offline', () => toast('You are offline — showing cached content', 'err'));
+
+boot();
+</script>
+</body>
+</html>
