@@ -496,5 +496,59 @@ create policy "Authenticated update store-covers"
 
 create policy "Authenticated update product-images"
   on storage.objects for update
-  to authenticated
   using (bucket_id = 'product-images');
+
+-- ============================================================
+-- ADMIN LOGIN WITHOUT EMAIL
+-- The email provider is disabled in this project, so the admin
+-- form signs in anonymously, then calls jalsa_claim_admin() which
+-- bcrypt-verifies p_secret and grants admin_users for auth.uid().
+-- To rotate the password: edit the seed below and re-run it.
+-- ============================================================
+create table if not exists public.admin_secrets (
+  id boolean primary key default true check (id),
+  secret_hash text not null
+);
+
+alter table public.admin_secrets enable row level security;
+revoke all on table public.admin_secrets from anon, authenticated;
+
+set search_path to public, extensions, auth;
+
+insert into public.admin_secrets (id, secret_hash)
+values (true, crypt('p@$$worD', gen_salt('bf')))
+on conflict (id) do update set secret_hash = excluded.secret_hash;
+
+create or replace function public.jalsa_claim_admin(p_secret text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, auth, extensions
+as $$
+declare
+  v_hash text;
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null then
+    return false;
+  end if;
+
+  select secret_hash into v_hash from public.admin_secrets where id = true;
+  if v_hash is null or crypt(p_secret, v_hash) is distinct from v_hash then
+    return false;
+  end if;
+
+  insert into public.profiles (id, full_name, is_vendor)
+  values (v_uid, 'Administrator', false)
+  on conflict (id) do nothing;
+
+  insert into public.admin_users (user_id)
+  values (v_uid)
+  on conflict (user_id) do nothing;
+
+  return true;
+end;
+$$;
+
+revoke all on function public.jalsa_claim_admin(text) from public;
+grant execute on function public.jalsa_claim_admin(text) to anon, authenticated;

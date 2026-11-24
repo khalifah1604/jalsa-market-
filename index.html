@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark" data-textsize="md">
 <head>
 <meta charset="utf-8" />
@@ -737,7 +737,7 @@ const CONFIG = {
   SUPPORT_WHATSAPP: '2349037343145',   // 09037343145 in international form
   SPLASH_MS: 3200,
   PAGE_SIZE: 12,
-  ADMIN_PATH: 'adminkhalifah'
+  ADMIN_PATH: 'Adminfash'
 };
 const IS_CONFIGURED = Boolean(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
 const WA_SUPPORT_DISPLAY = '09037343145';
@@ -1316,7 +1316,7 @@ async function restoreSession() {
   state.session = data?.session || null;
   if (!state.session) return false;
 
-  // await completePendingSignup(); // Email verification disabled
+  await completePendingSignup(); // Email verification disabled
 
   const { data: prof } = await supabase.from('profiles').select('*').eq('id', state.session.user.id).maybeSingle();
   if (!prof) return false;
@@ -1461,8 +1461,7 @@ async function refreshSaved() {
   updateSavedBadge();
 }
 
-async function customerSignup({ email, fullName, phone, consent }) {
-  canSendAuthEmail(email);
+async function customerSignup({ fullName, phone, consent }) {
   if (!supabase) {
     state.profile = {
       id: 'demo-user', full_name: fullName, phone,
@@ -1472,18 +1471,19 @@ async function customerSignup({ email, fullName, phone, consent }) {
     await afterAuth();
     return;
   }
-  sessionStorage.setItem('jalsa.pending.signup', JSON.stringify({
-    role: 'user', email, fullName, phone, consent
-  }));
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      shouldCreateUser: true,
-      emailRedirectTo: `${location.origin}${location.pathname}`
-    }
+  // Sign in anonymously — no email or verification needed at all.
+  const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+  if (anonError) throw new Error('Could not create account: ' + anonError.message);
+  const uid = anonData?.user?.id;
+  if (!uid) throw new Error('Could not create account. Please try again.');
+  // Save profile to DB.
+  const { error: profError } = await supabase.from('profiles').upsert({
+    id: uid, full_name: fullName, phone,
+    marketing_consent: consent, is_vendor: false
   });
-  if (error) throw new Error(authEmailError(error));
-  return { checkEmail: true, email, role: 'user' };
+  if (profError) console.warn('Profile save warning:', profError.message);
+  await restoreSession();
+  return { checkEmail: false, role: 'user' };
 }
 
 async function vendorSignup(form) {
@@ -1509,152 +1509,82 @@ async function vendorSignup(form) {
     await afterAuth();
     return state.vendor;
   }
-  canSendAuthEmail(form.email);
-  sessionStorage.setItem('jalsa.pending.signup', JSON.stringify({
-    role: 'vendor',
-    email: form.email,
-    ownerName: form.owner_name,
-    businessName: form.business_name,
-    phone: form.phone,
-    businessCategory: form.business_category,
+  // Sign in anonymously — no email or verification needed at all.
+  const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+  if (anonError) throw new Error('Could not create vendor account: ' + anonError.message);
+  const uid = anonData?.user?.id;
+  if (!uid) throw new Error('Could not create account. Please try again.');
+  // Save profile to DB.
+  const { error: profError } = await supabase.from('profiles').upsert({
+    id: uid, full_name: form.owner_name, phone: form.phone, is_vendor: true
+  });
+  if (profError) console.warn('Profile save warning:', profError.message);
+  // Save vendor store to DB.
+  const baseSlug = slugify(form.business_name) || 'store';
+  const slug = baseSlug + '-' + Math.random().toString(36).slice(2, 6);
+  const { error: vendorError } = await supabase.from('vendors').insert({
+    owner_id: uid,
+    business_name: form.business_name,
+    slug,
+    business_category: form.business_category,
     state: form.state,
     district: form.district,
-    localJamaat: form.local_jamaat,
-    participationType: form.participation_type,
-    stallNumber: form.stall_number,
-    description: form.description
-  }));
-  const { error } = await supabase.auth.signInWithOtp({
-    email: form.email,
-    options: {
-      shouldCreateUser: true,
-      emailRedirectTo: `${location.origin}${location.pathname}`
-    }
+    local_jamaat: form.local_jamaat,
+    participation_type: form.participation_type,
+    stall_number: form.stall_number || null,
+    description: form.description,
+    whatsapp_number: form.phone,
+    status: 'pending'
   });
-  if (error) throw new Error(authEmailError(error));
-  return { checkEmail: true, email: form.email, role: 'vendor' };
-}
-
-async function login(email, password) {
-  if (!supabase) throw new Error('Supabase is not configured.');
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(error.message);
-  const ok = await restoreSession();
-  if (!ok) throw new Error('Signed in, but no profile was found for this account.');
+  if (vendorError) console.warn('Vendor save warning:', vendorError.message);
+  await restoreSession();
+  return { checkEmail: false, role: 'vendor' };
 }
 
 async function loginByNameAndPhone(role, name, phone) {
-  const cleanName = String(name || '').trim();
-  const cleanPhone = String(phone || '').trim();
+  const cleanName  = String(name  || '').trim();
+  const cleanPhone = String(phone || '').replace(/\D/g, '');
   if (!cleanName || !cleanPhone) throw new Error('Enter both your name and phone number.');
 
   if (!supabase) {
     if (role === 'vendor') {
-      state.profile = {
-        id: 'demo-vendor',
-        full_name: cleanName,
-        phone: cleanPhone,
-        is_vendor: true
-      };
-      state.vendor = {
-        id: 'demo-vendor-store',
-        owner_id: 'demo-vendor',
-        business_name: cleanName,
-        slug: 'demo-store',
-        status: 'approved',
-        whatsapp_number: cleanPhone
-      };
+      state.profile = { id: 'demo-vendor', full_name: cleanName, phone, is_vendor: true };
+      state.vendor  = { id: 'demo-vendor-store', owner_id: 'demo-vendor', business_name: cleanName,
+                        slug: 'demo-store', status: 'approved', whatsapp_number: phone };
       LOCAL.profile = state.profile;
       state.mode = 'vendor';
-      await afterAuth();
-      return { checkEmail: false, role: 'vendor' };
+    } else {
+      const existing = LOCAL.profile;
+      state.profile = existing
+        ? { ...existing, full_name: cleanName, phone }
+        : { id: 'demo-user', full_name: cleanName, phone, created_at: new Date().toISOString() };
+      LOCAL.profile = state.profile;
+      state.mode = 'customer';
     }
-
-    const existing = LOCAL.profile;
-    state.profile = existing
-      ? { ...existing, full_name: cleanName, phone: cleanPhone }
-      : { id: 'demo-user', full_name: cleanName, phone: cleanPhone, created_at: new Date().toISOString() };
-    LOCAL.profile = state.profile;
-    state.mode = 'customer';
     await afterAuth();
-    return { checkEmail: false, role: 'user' };
+    return;
   }
 
-  // 1. Try direct password authentication (never sends email)
-  let directAuth = null;
-  try {
-    const { data: authData, error: authErr } = await supabase.rpc('jalsa_authenticate_login', {
-      p_role: role,
-      p_name: cleanName,
-      p_phone: cleanPhone
-    });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
-    if (!authErr && authData) {
-      directAuth = Array.isArray(authData) ? authData[0] : authData;
-    }
-  } catch (_) {}
+  // Look up profile by phone number in the profiles table.
+  const { data: profiles, error: lookupError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('phone', cleanPhone)
+    .limit(1);
+  if (lookupError) throw new Error(lookupError.message);
+  const prof = profiles && profiles[0];
+  if (!prof) throw new Error('No account found for that phone number. Please sign up first.');
 
-  if (directAuth?.email && directAuth?.auth_token) {
-    const { error: signErr } = await supabase.auth.signInWithPassword({
-      email: directAuth.email,
-      password: directAuth.auth_token
-    });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
-    if (!signErr) {
-      await restoreSession();
-      return { checkEmail: false, role };
-    }
+  // Check name matches (loose check — first word).
+  const firstName = cleanName.split(' ')[0].toLowerCase();
+  const storedFirst = (prof.full_name || '').split(' ')[0].toLowerCase();
+  if (storedFirst && firstName && storedFirst !== firstName) {
+    throw new Error('Name does not match our records. Please check and try again.');
   }
 
-  // 2. Direct lookup fallback (logs in immediately without sending any email)
-  const { data, error } = await supabase.rpc('jalsa_lookup_login', {
-    p_role: role,
-    p_name: cleanName,
-    p_phone: cleanPhone
-  });
-  if (error) throw new Error(error.message);
-  const match = Array.isArray(data) ? data[0] : data;
-  if (!match?.email && !match?.id) {
-    throw new Error(role === 'vendor'
-      ? 'No vendor account matches that business name and phone number.'
-      : 'No account matches that name and phone number.');
-  }
-
-  // Fetch full profile and vendor store
-  let prof = null;
-  if (match.id) {
-    const { data: pData } = await supabase.from('profiles').select('*').eq('id', match.id).maybeSingle();
-    prof = pData;
-  }
-  if (!prof && match.email) {
-    const { data: pData } = await supabase.from('profiles').select('*').eq('email', match.email).maybeSingle();
-    prof = pData;
-  }
-  if (!prof) {
-    prof = {
-      id: match.id || 'usr_' + Date.now(),
-      full_name: match.full_name || cleanName,
-      email: match.email || '',
-      phone: match.phone || cleanPhone,
-      is_vendor: role === 'vendor'
-    };
-  }
-
+  // Set state from DB profile.
   state.profile = prof;
   LOCAL.profile = prof;
-
   if (role === 'vendor' || prof.is_vendor) {
     const { data: v } = await supabase.from('vendors').select('*').eq('owner_id', prof.id).maybeSingle();
     state.vendor = v || null;
@@ -1662,9 +1592,7 @@ async function loginByNameAndPhone(role, name, phone) {
   } else {
     state.mode = 'customer';
   }
-
   await afterAuth();
-  return { checkEmail: false, role };
 }
 
 async function logout() {
@@ -1937,17 +1865,13 @@ function renderAuth(view = 'login', data = null) {
           <h2>Sign Up</h2>
           <p>Create your customer profile.</p>
           <div class="login-role-toggle" aria-label="Sign up account type">
-            <button type="button" class="active" data-action="auth-view" data-view="customer">User</button>
+            <button type="button" class="active" data-action="auth-view" data-view="customer">Customer</button>
             <button type="button" data-action="auth-view" data-view="vendor">Vendor</button>
           </div>
           <form id="form-customer" class="form-grid" novalidate>
             <div class="field">
               <label class="label" for="c-name">Full name *</label>
               <input class="input" id="c-name" name="full_name" autocomplete="name" required maxlength="120" placeholder="Khalifah Bello">
-            </div>
-            <div class="field">
-              <label class="label" for="c-email">Email address *</label>
-              <input class="input" id="c-email" name="email" type="email" autocomplete="email" required placeholder="hello@example.com">
             </div>
             <div class="field">
               <label class="label" for="c-phone">Phone number *</label>
@@ -1985,7 +1909,7 @@ function renderAuth(view = 'login', data = null) {
           <h2>Vendor Sign Up</h2>
           <p>Open your storefront and reach Jalsa customers.</p>
           <div class="login-role-toggle" aria-label="Sign up account type">
-            <button type="button" data-action="auth-view" data-view="customer">User</button>
+            <button type="button" data-action="auth-view" data-view="customer">Customer</button>
             <button type="button" class="active" data-action="auth-view" data-view="vendor">Vendor</button>
           </div>
           <form id="form-vendor" class="form-grid" novalidate>
@@ -1996,10 +1920,6 @@ function renderAuth(view = 'login', data = null) {
             <div class="field">
               <label class="label" for="v-owner">Owner's full name *</label>
               <input class="input" id="v-owner" name="owner_name" autocomplete="name" required maxlength="120" placeholder="e.g. Khalifah Bello">
-            </div>
-            <div class="field">
-              <label class="label" for="v-email">Email address *</label>
-              <input class="input" id="v-email" name="email" type="email" autocomplete="email" required placeholder="vendor@example.com">
             </div>
             <div class="field">
               <label class="label" for="v-phone">WhatsApp phone number *</label>
@@ -3096,8 +3016,6 @@ async function renderAdmin(section = '') {
         <form id="form-admin" class="form-grid">
           <div class="field"><label class="label">Username</label>
             <input class="input" name="username" autocomplete="username" required></div>
-          <div class="field"><label class="label">Email</label>
-            <input class="input" name="email" type="email" autocomplete="email" required></div>
           <div class="field"><label class="label">Password</label>
             <input class="input" name="password" type="password" autocomplete="current-password" required></div>
           <p class="field-error hide" id="a-error"></p>
@@ -3113,8 +3031,18 @@ async function renderAdmin(section = '') {
       errEl.classList.add('hide');
       try {
         if (fd.get('username') !== CONFIG.ADMIN_PATH) throw new Error('Invalid administrator credentials.');
-        await login(fd.get('email'), fd.get('password'));
-        if (!state.isAdmin) throw new Error('This account does not have administrator access.');
+        if (!supabase) throw new Error('Supabase is not configured.');
+        const secret = String(fd.get('password') || '');
+        const { data: sessData } = await supabase.auth.getSession();
+        if (!sessData?.session) {
+          const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+          if (anonError) throw new Error(anonError.message);
+        }
+        const { data: claimed, error: claimError } = await supabase.rpc('jalsa_claim_admin', { p_secret: secret });
+        if (claimError) throw new Error(claimError.message);
+        if (!claimed) throw new Error('Invalid administrator credentials.');
+        const ok = await restoreSession();
+        if (!ok || !state.isAdmin) throw new Error('This account does not have administrator access.');
         router();
       } catch (err) {
         errEl.textContent = err.message;
@@ -3743,7 +3671,6 @@ document.addEventListener('submit', async (e) => {
     form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
 
     const fullName = (fd.get('full_name') || '').trim();
-    const email = (fd.get('email') || '').trim().toLowerCase();
     const phone = (fd.get('phone') || '').trim();
 
     function showCustomerError(msg, fieldName) {
@@ -3760,7 +3687,6 @@ document.addEventListener('submit', async (e) => {
     }
 
     if (!fullName) return showCustomerError('Please enter your full name.', 'full_name');
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showCustomerError('Please enter a valid email address.', 'email');
     if (!phone || phone.replace(/\D/g, '').length < 10) return showCustomerError('Please enter a valid phone number (at least 10 digits).', 'phone');
 
     const btn = form.querySelector('button[type=submit]');
@@ -3768,25 +3694,14 @@ document.addEventListener('submit', async (e) => {
     const oldText = btn.textContent;
     btn.textContent = 'Creating Account...';
     try {
-      const res = await customerSignup({
-        email,
+      await customerSignup({
         fullName,
         phone,
         consent: fd.get('consent') === 'on'
       });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
-      if (res?.checkEmail) {
-        renderAuth('check-email', { email: res.email, role: 'user' });
-      } else {
-        location.hash = '#/home';
-        await router();
-      }
+      // afterAuth() was already called inside customerSignup; just navigate.
+      location.hash = '#/home';
+      await router();
     } catch (err) {
       showCustomerError(err.message);
     } finally {
@@ -3805,7 +3720,6 @@ document.addEventListener('submit', async (e) => {
 
     const businessName = (fd.get('business_name') || '').trim();
     const ownerName = (fd.get('owner_name') || '').trim();
-    const email = (fd.get('email') || '').trim().toLowerCase();
     const phone = (fd.get('phone') || '').trim();
     const stateVal = (fd.get('state') || '').trim();
     const district = (fd.get('district') || '').trim();
@@ -3826,7 +3740,6 @@ document.addEventListener('submit', async (e) => {
 
     if (!businessName) return showVendorError('Please enter your business name.', 'business_name');
     if (!ownerName) return showVendorError("Please enter the owner's full name.", 'owner_name');
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showVendorError('Please enter a valid email address.', 'email');
     if (!phone || phone.replace(/\D/g, '').length < 10) return showVendorError('Please enter a valid WhatsApp number (at least 10 digits).', 'phone');
     if (!stateVal) return showVendorError('Please enter your state.', 'state');
     if (!district) return showVendorError('Please enter your district or dila.', 'district');
@@ -3838,12 +3751,9 @@ document.addEventListener('submit', async (e) => {
     btn.textContent = 'Creating Storefront...';
     try {
       const res = await vendorSignup(Object.fromEntries(fd.entries()));
-      if (res?.checkEmail) {
-        renderAuth('check-email', { email: res.email, role: 'vendor' });
-      } else {
-        location.hash = '#/vendor';
-        await router();
-      }
+      // afterAuth() was already called inside vendorSignup; just navigate.
+      location.hash = '#/vendor';
+      await router();
     } catch (err) {
       showVendorError(err.message);
     } finally {
