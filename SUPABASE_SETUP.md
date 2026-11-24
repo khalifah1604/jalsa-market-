@@ -84,9 +84,11 @@ The app reads:
 
 ## 6. Create an administrator
 
-1. Create a Supabase Auth user for the administrator.
-2. Insert that user's UUID into `admin_users`.
-3. Keep the administrator email/password login for the restricted admin route.
+The admin route never uses email (the Email provider is disabled). Instead:
+
+1. Run the **ADMIN LOGIN WITHOUT EMAIL** section at the end of `supabase_schema.sql` — it creates the `admin_secrets` table, seeds the bcrypt password hash, and defines `jalsa_claim_admin()`.
+2. Sign in at `#/admin` with username `Adminfash` and the seeded password. The app signs in anonymously and the RPC grants that session the `admin_users` row.
+3. To change the admin password later, edit the seed in `supabase_schema.sql` and re-run just that statement.
 
 ## 7. Remaining project work
 
