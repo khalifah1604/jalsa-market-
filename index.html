@@ -1316,7 +1316,7 @@ async function restoreSession() {
   state.session = data?.session || null;
   if (!state.session) return false;
 
-  await completePendingSignup();
+  // await completePendingSignup(); // Email verification disabled
 
   const { data: prof } = await supabase.from('profiles').select('*').eq('id', state.session.user.id).maybeSingle();
   if (!prof) return false;
