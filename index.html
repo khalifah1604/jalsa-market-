@@ -1125,6 +1125,13 @@ const api = {
           vendor: r.products.vendors
         };
       });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
     } catch (err) {
       console.warn('Cart load error:', err);
       state.cart = [];
@@ -1152,6 +1159,13 @@ const api = {
           product: { ...product, price: livePrice },
           vendor: v
         });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
       }
       LOCAL.guestCart = cart;
       state.cart = cart;
@@ -1179,6 +1193,13 @@ const api = {
           quantity: qty,
           price_snapshot: livePrice
         });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
       }
       await api.loadCart();
     } catch (err) {
@@ -1197,6 +1218,13 @@ const api = {
           product: { ...product, price: livePrice },
           vendor: v
         });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
       }
       LOCAL.guestCart = cart;
       state.cart = cart;
@@ -1357,6 +1385,13 @@ async function completePendingSignup() {
       marketing_consent: Boolean(pending.consent),
       consent_at: pending.consent ? new Date().toISOString() : null
     });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
     if (error) throw error;
 
     if (pending.consent) {
@@ -1365,6 +1400,13 @@ async function completePendingSignup() {
         consent_type: 'whatsapp_marketing',
         granted: true
       });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
     }
   } else {
     const { error: profileError } = await supabase.from('profiles').upsert({
@@ -1374,6 +1416,13 @@ async function completePendingSignup() {
       phone: pending.phone,
       is_vendor: true
     });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
     if (profileError) throw profileError;
 
     const baseSlug = slugify(pending.businessName) || 'store';
@@ -1392,6 +1441,13 @@ async function completePendingSignup() {
       whatsapp_number: pending.phone,
       status: 'pending'
     });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
     if (vendorError) throw vendorError;
   }
 
@@ -1532,6 +1588,13 @@ async function loginByNameAndPhone(role, name, phone) {
       p_name: cleanName,
       p_phone: cleanPhone
     });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
     if (!authErr && authData) {
       directAuth = Array.isArray(authData) ? authData[0] : authData;
     }
@@ -1542,6 +1605,13 @@ async function loginByNameAndPhone(role, name, phone) {
       email: directAuth.email,
       password: directAuth.auth_token
     });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
     if (!signErr) {
       await restoreSession();
       return { checkEmail: false, role };
@@ -2996,6 +3066,13 @@ function renderVendorProfile() {
         }
       }
     });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
   });
 }
 
@@ -3044,6 +3121,13 @@ async function renderAdmin(section = '') {
         errEl.classList.remove('hide');
       }
     });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
     return;
   }
 
@@ -3266,6 +3350,13 @@ document.addEventListener('click', async (e) => {
         btn.classList.toggle('on', nowSaved);
         btn.setAttribute('aria-label', nowSaved ? 'Remove from saved' : 'Save product');
       });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
       toast(nowSaved ? 'Added to saved products' : 'Removed from saved');
       if (state.route.name === 'saved') renderSaved();
     } catch (err) { toast(err.message, 'err'); }
@@ -3378,6 +3469,13 @@ document.addEventListener('click', async (e) => {
       const price = live?.price ?? i.price_snapshot ?? i.product?.price ?? 0;
       return { name: i.product?.name || 'Product', qty: i.quantity, price, line: price * i.quantity };
     });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
     const subtotal = lines.reduce((s, l) => s + l.line, 0);
 
     const customerName = state.profile?.full_name || 'Customer';
@@ -3406,6 +3504,13 @@ Sent from Jalsa Market`;
       item_count: items.reduce((s, i) => s + i.quantity, 0),
       subtotal
     });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
 
     window.open(waLink(vendor.whatsapp_number, message), '_blank', 'noopener');
     toast('Opening WhatsApp — this is an enquiry, not a confirmed order.');
@@ -3558,6 +3663,13 @@ async function openProductEditor(id) {
       const res = await uploadImage(file, IMG_PRESETS.product, state.vendor.id, (pct) => {
         bar.querySelector('i').style.width = pct + '%';
       });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
       uploadedPath = res.storagePath;
       toast(`Image ready (${res.sizeKB} KB)`);
     } catch (err) {
@@ -3602,6 +3714,13 @@ async function openProductEditor(id) {
         await supabase.from('product_images').insert({
           product_id: productId, storage_path: uploadedPath, sort_order: 0
         });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
       }
       closeSheet();
       toast(isEdit ? 'Product updated' : 'Product created');
@@ -3655,6 +3774,13 @@ document.addEventListener('submit', async (e) => {
         phone,
         consent: fd.get('consent') === 'on'
       });
+   // Force a session check on page load so the hash token is consumed
+   // and the auth state is up‑to‑date.
+   supabase.auth.getSession().then(({ data, error }) => {
+     if (error) console.error('Supabase session init error:', error);
+     // Remove the fragment from the URL for security.
+     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+   });
       if (res?.checkEmail) {
         renderAuth('check-email', { email: res.email, role: 'user' });
       } else {
