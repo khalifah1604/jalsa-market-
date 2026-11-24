@@ -740,6 +740,8 @@ const CONFIG = {
   ADMIN_PATH: 'Adminfash'
 };
 const IS_CONFIGURED = Boolean(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
+const BUILD = '2026-11-24-soft-logout';
+window.JALSA_BUILD = BUILD;
 const WA_SUPPORT_DISPLAY = '09037343145';
 
 /* ------------------------------------------------------------
@@ -1306,12 +1308,21 @@ function storageUrl(path) {
 /* ------------------------------------------------------------
    5. AUTH
    ------------------------------------------------------------ */
+/* Soft logout: anonymous accounts have no credentials, so a real signOut()
+   would make the account impossible to sign back into. Instead we keep the
+   Supabase session on this device and only gate it behind this flag. Login
+   re-attaches the session after matching the saved name + phone. */
+const SIGNED_OUT_KEY = 'jalsa.signed_out';
+function isSignedOut() { try { return localStorage.getItem(SIGNED_OUT_KEY) === '1'; } catch { return false; } }
+function setSignedOut(v) { try { v ? localStorage.setItem(SIGNED_OUT_KEY, '1') : localStorage.removeItem(SIGNED_OUT_KEY); } catch (_) {} }
+
 async function restoreSession() {
   if (!supabase) {
     state.profile = LOCAL.profile;
     if (state.profile) await afterAuth();
     return Boolean(state.profile);
   }
+  if (isSignedOut()) { state.session = null; return false; }
   const { data } = await supabase.auth.getSession();
   state.session = data?.session || null;
   if (!state.session) return false;
@@ -1462,6 +1473,7 @@ async function refreshSaved() {
 }
 
 async function customerSignup({ fullName, phone, consent }) {
+  setSignedOut(false);
   if (!supabase) {
     state.profile = {
       id: 'demo-user', full_name: fullName, phone,
@@ -1476,17 +1488,21 @@ async function customerSignup({ fullName, phone, consent }) {
   if (anonError) throw new Error('Could not create account: ' + anonError.message);
   const uid = anonData?.user?.id;
   if (!uid) throw new Error('Could not create account. Please try again.');
-  // Save profile to DB.
+  // Save profile to DB (name + phone are the login credentials, so fail loudly).
   const { error: profError } = await supabase.from('profiles').upsert({
     id: uid, full_name: fullName, phone,
     marketing_consent: consent, is_vendor: false
   });
-  if (profError) console.warn('Profile save warning:', profError.message);
+  if (profError) throw new Error('Could not save your profile: ' + profError.message);
   await restoreSession();
+  if (!state.profile) {
+    throw new Error('Account created but the profile could not be loaded. Check the profiles RLS policies in Supabase.');
+  }
   return { checkEmail: false, role: 'user' };
 }
 
 async function vendorSignup(form) {
+  setSignedOut(false);
   if (!supabase) {
     const slug = `${slugify(form.business_name) || 'store'}-${Math.random().toString(36).slice(2, 6)}`;
     state.profile = {
@@ -1514,11 +1530,11 @@ async function vendorSignup(form) {
   if (anonError) throw new Error('Could not create vendor account: ' + anonError.message);
   const uid = anonData?.user?.id;
   if (!uid) throw new Error('Could not create account. Please try again.');
-  // Save profile to DB.
+  // Save profile to DB (name + phone are the login credentials, so fail loudly).
   const { error: profError } = await supabase.from('profiles').upsert({
     id: uid, full_name: form.owner_name, phone: form.phone, is_vendor: true
   });
-  if (profError) console.warn('Profile save warning:', profError.message);
+  if (profError) throw new Error('Could not save your profile: ' + profError.message);
   // Save vendor store to DB.
   const baseSlug = slugify(form.business_name) || 'store';
   const slug = baseSlug + '-' + Math.random().toString(36).slice(2, 6);
@@ -1536,8 +1552,11 @@ async function vendorSignup(form) {
     whatsapp_number: form.phone,
     status: 'pending'
   });
-  if (vendorError) console.warn('Vendor save warning:', vendorError.message);
+  if (vendorError) throw new Error('Could not save your storefront: ' + vendorError.message);
   await restoreSession();
+  if (!state.profile) {
+    throw new Error('Account created but the profile could not be loaded. Check the profiles RLS policies in Supabase.');
+  }
   return { checkEmail: false, role: 'vendor' };
 }
 
@@ -1565,29 +1584,64 @@ async function loginByNameAndPhone(role, name, phone) {
     return;
   }
 
-  // Look up profile by phone number in the profiles table.
-  const { data: profiles, error: lookupError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('phone', cleanPhone)
-    .limit(1);
-  if (lookupError) throw new Error(lookupError.message);
-  const prof = profiles && profiles[0];
-  if (!prof) throw new Error('No account found for that phone number. Please sign up first.');
-
-  // Check name matches (loose check — first word).
-  const firstName = cleanName.split(' ')[0].toLowerCase();
-  const storedFirst = (prof.full_name || '').split(' ')[0].toLowerCase();
-  if (storedFirst && firstName && storedFirst !== firstName) {
-    throw new Error('Name does not match our records. Please check and try again.');
+  // Anonymous sessions can't re-authenticate after a real signOut, so "login"
+  // re-attaches this device's existing session after matching name + phone.
+  const { data: sessData, error: sessError } = await supabase.auth.getSession();
+  if (sessError) throw new Error(sessError.message);
+  const session = sessData?.session || null;
+  if (!session?.user) {
+    throw new Error('No account found on this device. Please sign up first.');
   }
 
-  // Set state from DB profile.
+  const { data: prof, error: lookupError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .maybeSingle();
+  if (lookupError) throw new Error(lookupError.message);
+  if (!prof) {
+    console.warn('[Jalsa] Login: session', session.user.id, 'has no profiles row');
+    throw new Error('Your saved session has no profile. Please sign up again.');
+  }
+
+  const digits = s => String(s || '').replace(/\D/g, '');
+  const storedPhone = digits(prof.phone);
+  if (!storedPhone) {
+    throw new Error('This account has no phone number saved. Please sign up again so we can store it.');
+  }
+  const phoneOk = storedPhone === cleanPhone
+    || (storedPhone.length >= 10 && cleanPhone.length >= 10
+        && storedPhone.slice(-10) === cleanPhone.slice(-10));
+  if (!phoneOk) {
+    throw new Error('That phone number does not match the account saved on this device.');
+  }
+
+  const { data: v } = await supabase.from('vendors').select('*').eq('owner_id', prof.id).maybeSingle();
+  const vendorRow = v || null;
+
+  const sameFirstWord = (a, b) => {
+    const x = String(a || '').trim().split(/\s+/)[0].toLowerCase();
+    const y = String(b || '').trim().split(/\s+/)[0].toLowerCase();
+    return !x || !y || x === y;
+  };
+  const nameOk = role === 'vendor'
+    ? sameFirstWord(vendorRow?.business_name, cleanName) || sameFirstWord(prof.full_name, cleanName)
+    : sameFirstWord(prof.full_name, cleanName);
+  if (!nameOk) {
+    throw new Error(role === 'vendor'
+      ? 'Business name does not match the account saved on this device.'
+      : 'Name does not match the account saved on this device.');
+  }
+  if (role === 'vendor' && !prof.is_vendor) {
+    throw new Error('This account is not registered as a vendor.');
+  }
+
+  setSignedOut(false);
+  state.session = session;
   state.profile = prof;
   LOCAL.profile = prof;
   if (role === 'vendor' || prof.is_vendor) {
-    const { data: v } = await supabase.from('vendors').select('*').eq('owner_id', prof.id).maybeSingle();
-    state.vendor = v || null;
+    state.vendor = vendorRow;
     state.mode = 'vendor';
   } else {
     state.mode = 'customer';
@@ -1596,14 +1650,14 @@ async function loginByNameAndPhone(role, name, phone) {
 }
 
 async function logout() {
-  if (supabase) await supabase.auth.signOut();
+  if (supabase) setSignedOut(true);
   else { LOCAL.profile = null; }
   state.session = null; state.profile = null; state.vendor = null;
   state.cart = []; state.saved = new Set(); state.isAdmin = false; state.mode = 'customer';
   updateCartBadge();
   updateSavedBadge();
-  location.hash = '#/home';
-  renderAuth();
+  try { history.replaceState(null, '', '#/home'); } catch (_) { location.hash = '#/home'; }
+  renderAuth('login');
 }
 
 /* ------------------------------------------------------------
@@ -3041,6 +3095,7 @@ async function renderAdmin(section = '') {
         const { data: claimed, error: claimError } = await supabase.rpc('jalsa_claim_admin', { p_secret: secret });
         if (claimError) throw new Error(claimError.message);
         if (!claimed) throw new Error('Invalid administrator credentials.');
+        setSignedOut(false);
         const ok = await restoreSession();
         if (!ok || !state.isAdmin) throw new Error('This account does not have administrator access.');
         router();
@@ -3258,7 +3313,7 @@ document.addEventListener('click', async (e) => {
     e.preventDefault();
     openSheet(`
       <h2>Log out?</h2>
-      <div class="sheet-body">You will need to sign in again to access your cart, saved products and storefront.</div>
+      <div class="sheet-body">You'll sign back in on this device with your name and phone number. This browser stays linked to this account, so use a different browser for a separate account.</div>
       <div class="sheet-actions">
         <button class="btn btn-danger btn-block" data-action="logout-confirm">Log out</button>
         <button class="btn btn-ghost btn-block" data-action="close-sheet">Cancel</button>
@@ -3825,6 +3880,7 @@ document.addEventListener('change', (e) => {
    ------------------------------------------------------------ */
 async function boot() {
   loadPrefs();
+  console.info('[Jalsa] build', BUILD);
 
   // Normalise /admin path → hash route
   if (/\/admin\/?$/.test(location.pathname) && !location.hash) {
