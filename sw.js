@@ -1,8 +1,7 @@
-const CACHE_NAME = 'jalsa-market-v1';
+const CACHE_NAME = 'jalsa-market-v2';
 const APP_SHELL = [
   './',
   './index.html',
-  './login.html',
   './jalsa%20logo.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -10,7 +9,10 @@ const APP_SHELL = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
+  // Add entries individually so one missing file can't fail the whole install.
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => Promise.allSettled(APP_SHELL.map(url => cache.add(url))))
+  );
   self.skipWaiting();
 });
 
@@ -23,12 +25,21 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  // Only handle same-origin assets. Never cache Supabase API/auth/storage calls.
+  if (new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(
-    fetch(event.request).then(response => {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+    fetch(req).then(response => {
+      if (response && response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(req, copy)).catch(() => {});
+      }
       return response;
-    }).catch(() => caches.match(event.request).then(cached => cached || caches.match('./index.html')))
+    }).catch(() =>
+      caches.match(req).then(cached =>
+        cached || (req.mode === 'navigate' ? caches.match('./index.html') : undefined)
+      )
+    )
   );
 });
