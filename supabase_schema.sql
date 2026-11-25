@@ -552,3 +552,115 @@ $$;
 
 revoke all on function public.jalsa_claim_admin(text) from public;
 grant execute on function public.jalsa_claim_admin(text) to anon, authenticated;
+
+-- ============================================================
+-- CATEGORY DISCOVERY UPGRADE
+-- Run this block once in the Supabase SQL Editor. It is idempotent:
+-- re-running will not duplicate categories or overwrite existing
+-- category links that are already set.
+-- ============================================================
+
+-- 1. Seed the canonical categories used by the marketplace.
+insert into public.categories (name, slug, sort_order, is_active) values
+  ('Food & Snacks',        'food-snacks',        10, true),
+  ('Fashion',              'fashion',            20, true),
+  ('Books',                'books',              30, true),
+  ('Beauty',               'beauty',             40, true),
+  ('Electronics',          'electronics',        50, true),
+  ('Accessories',          'accessories',        60, true),
+  ('Shoes',                'shoes',              70, true),
+  ('Perfumes',             'perfumes',           80, true),
+  ('Islamic Products',     'islamic-products',   90, true),
+  ('Home & Lifestyle',     'home-lifestyle',    100, true),
+  ('Phones & Accessories', 'phones-accessories', 110, true),
+  ('Gifts',                'gifts',             120, true),
+  ('Groceries',            'groceries',         130, true),
+  ('Services',             'services',          140, true),
+  ('Baby & Kids',          'baby-kids',         150, true),
+  ('Sports & Fitness',     'sports-fitness',    160, true),
+  ('Art & Crafts',         'art-crafts',        170, true),
+  ('Other',                'other',             180, true),
+  ('Fabrics & Textiles',   'fabrics-textiles',   190, true),
+  ('Jewelry & Watches',    'jewelry-watches',    200, true),
+  ('Stationery',           'stationery',         210, true),
+  ('Toys & Games',         'toys-games',         220, true)
+on conflict (slug) do nothing;
+
+-- 2. Backfill vendors that only have the legacy text category.
+update public.vendors v
+set category_id = c.id
+from public.categories c
+where v.category_id is null
+  and v.business_category is not null
+  and (lower(v.business_category) = lower(c.name) or lower(v.business_category) = lower(c.slug));
+
+-- 3. Keep the legacy text column in sync for anything linked by id.
+update public.vendors v
+set business_category = c.name
+from public.categories c
+where v.category_id = c.id
+  and (v.business_category is null or v.business_category <> c.name);
+
+-- 4. Products inherit their vendor's category when they have none.
+update public.products p
+set category_id = v.category_id
+from public.vendors v
+where p.vendor_id = v.id
+  and p.category_id is null
+  and v.category_id is not null;
+
+-- 5. Indexes for the browse-by-category queries.
+create index if not exists vendors_status_category_idx on public.vendors (status, category_id);
+create index if not exists vendors_featured_idx on public.vendors (is_featured, created_at desc);
+create index if not exists products_vendor_category_idx on public.products (vendor_id, category_id);
+create index if not exists products_category_created_idx on public.products (category_id, created_at desc);
+
+-- 6. Vendor counts per category (used for chip counts on Home/Explore).
+create or replace function public.jalsa_vendor_counts()
+returns table (category_id uuid, vendor_count bigint)
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select v.category_id, count(*)::bigint
+  from public.vendors v
+  where v.status = 'approved' and v.category_id is not null
+  group by v.category_id;
+$$;
+
+revoke all on function public.jalsa_vendor_counts() from public;
+grant execute on function public.jalsa_vendor_counts() to anon, authenticated;
+
+-- 7. Discovery feed: at most p_per_vendor products per vendor so one store
+--    cannot flood the home/explore grids. Returns product ids in display order.
+create or replace function public.jalsa_discover_products(
+  p_per_vendor integer default 1,
+  p_limit integer default 12,
+  p_category_id uuid default null,
+  p_search text default null
+)
+returns table (product_id uuid, sort_at timestamptz)
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select ranked.id, ranked.created_at
+  from (
+    select p.id, p.created_at,
+           row_number() over (partition by p.vendor_id order by p.created_at desc) as rn
+    from public.products p
+    join public.vendors v on v.id = p.vendor_id
+    where v.status = 'approved'
+      and p.is_available
+      and (p_category_id is null or p.category_id = p_category_id)
+      and (p_search is null or p_search = '' or p.name ilike '%' || p_search || '%')
+  ) ranked
+  where ranked.rn <= greatest(p_per_vendor, 1)
+  order by ranked.created_at desc
+  limit greatest(p_limit, 1);
+$$;
+
+revoke all on function public.jalsa_discover_products(integer, integer, uuid, text) from public;
+grant execute on function public.jalsa_discover_products(integer, integer, uuid, text) to anon, authenticated;
