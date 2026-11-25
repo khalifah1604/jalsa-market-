@@ -303,6 +303,12 @@ select:focus,.select:focus{ outline:none; border-color:var(--green); }
 }
 .cat-chip:hover{ border-color:var(--green); }
 .cat-chip.active{ background:var(--green); border-color:var(--green); color:#fff; font-weight:600; }
+.chip-count{
+  display:inline-grid; place-items:center; min-width:20px; height:19px; padding:0 5px;
+  border-radius:9px; background:var(--green-soft); color:var(--green);
+  font-size:.66rem; font-weight:700; line-height:1;
+}
+.cat-chip.active .chip-count{ background:rgba(255,255,255,.2); color:#fff; }
 
 /* ============================================================
    13. HORIZONTAL SCROLLERS
@@ -315,6 +321,10 @@ select:focus,.select:focus{ outline:none; border-color:var(--green); }
   flex:0 0 232px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;
   background:var(--surface); transition:border-color .2s var(--ease), transform .14s var(--ease);
 }
+.vendor-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:13px; }
+.vendor-grid .vendor-card{ flex:none; width:100%; }
+@media(min-width:600px){ .vendor-grid{ grid-template-columns:repeat(3,1fr); } }
+@media(min-width:900px){ .vendor-grid{ grid-template-columns:repeat(4,1fr); gap:16px; } }
 .vendor-card:hover{ border-color:var(--green); }
 .vendor-card:active{ transform:scale(.99); }
 .vc-media{ height:92px; background:var(--bg2); position:relative; overflow:hidden; }
@@ -413,6 +423,7 @@ select:focus,.select:focus{ outline:none; border-color:var(--green); }
 .p-name{ font-size:.83rem; font-weight:500; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.2em; }
 .p-price{ font-size:.92rem; font-weight:700; letter-spacing:-.02em; margin-top:auto; padding-top:5px; }
 .p-vendor{ font-size:.71rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+a.p-vendor:hover{ color:var(--green); text-decoration:underline; }
 
 /* ============================================================
    15. PANELS / CARDS
@@ -740,7 +751,7 @@ const CONFIG = {
   ADMIN_PATH: 'Adminfash'
 };
 const IS_CONFIGURED = Boolean(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
-const BUILD = '2026-11-24-soft-logout';
+const BUILD = '2026-11-25-category-discovery';
 window.JALSA_BUILD = BUILD;
 const WA_SUPPORT_DISPLAY = '09037343145';
 
@@ -895,6 +906,36 @@ const state = {
   booted: false
 };
 
+/* Fallback category names used by the forms before the DB categories load
+   (or in un-configured demo mode). The DB table is the source of truth. */
+const FALLBACK_CATEGORY_NAMES = [
+  'Food & Snacks', 'Fashion', 'Books', 'Beauty', 'Electronics', 'Accessories',
+  'Shoes', 'Perfumes', 'Islamic Products', 'Home & Lifestyle', 'Phones & Accessories',
+  'Gifts', 'Groceries', 'Services', 'Baby & Kids', 'Sports & Fitness', 'Art & Crafts',
+  'Fabrics & Textiles', 'Jewelry & Watches', 'Stationery', 'Toys & Games', 'Other'
+];
+
+function categoryNames() {
+  return state.categories.length ? state.categories.map(c => c.name) : FALLBACK_CATEGORY_NAMES;
+}
+
+function categoryNameOptions(selected) {
+  return categoryNames().map(c =>
+    `<option value="${esc(c)}" ${c === selected ? 'selected' : ''}>${esc(c)}</option>`).join('');
+}
+
+function categoryBySlug(slug) {
+  return state.categories.find(c => c.slug === slug) || null;
+}
+
+function categoryIdByName(name) {
+  if (!name) return null;
+  const wanted = String(name).trim().toLowerCase();
+  const hit = state.categories.find(c =>
+    c.name.toLowerCase() === wanted || c.slug.toLowerCase() === wanted);
+  return hit ? hit.id : null;
+}
+
 /* Preferences persisted locally (never sensitive data) */
 const PREFS_KEY = 'jalsa.prefs.v1';
 function loadPrefs() {
@@ -1006,15 +1047,91 @@ const api = {
     return normalizeProduct(data);
   },
 
-  async vendors({ limit = 12, foodOnly = false } = {}) {
-    if (!supabase) return [];
+  async vendors({ page = 0, size = CONFIG.PAGE_SIZE, categoryId = null, search = '', sort = 'featured', featured = null } = {}) {
+    if (!supabase) return { items: [], count: 0 };
     let q = supabase.from('vendors')
-      .select('id,business_name,slug,logo_path,cover_path,business_category,stall_number,'
-        + 'participation_type,jalsa_availability,is_featured,categories(name)')
-      .eq('status', 'approved').limit(limit);
-    if (foodOnly) q = q.ilike('business_category', '%food%');
-    const { data } = await q;
-    return data || [];
+      .select('id,business_name,slug,logo_path,cover_path,business_category,category_id,stall_number,'
+        + 'participation_type,jalsa_availability,is_featured,categories(name,slug)', { count: 'exact' })
+      .eq('status', 'approved');
+
+    if (categoryId) q = q.eq('category_id', categoryId);
+    if (featured === true) q = q.eq('is_featured', true);
+    if (search) {
+      const term = search.replace(/[%,()*]/g, ' ').trim();
+      if (term) q = q.or(`business_name.ilike.%${term}%,business_category.ilike.%${term}%`);
+    }
+
+    if (sort === 'name') q = q.order('business_name', { ascending: true });
+    else if (sort === 'recent') q = q.order('created_at', { ascending: false });
+    else q = q.order('is_featured', { ascending: false }).order('created_at', { ascending: false });
+
+    q = q.range(page * size, page * size + size - 1);
+    const { data, error, count } = await q;
+    if (error) { console.warn(error); return { items: [], count: 0 }; }
+    return { items: data || [], count: count || 0 };
+  },
+
+  async vendorCounts() {
+    if (!supabase) return {};
+    const { data, error } = await supabase.rpc('jalsa_vendor_counts');
+    if (!error && Array.isArray(data)) {
+      const map = {};
+      data.forEach(r => { map[r.category_id] = Number(r.vendor_count) || 0; });
+      return map;
+    }
+    // Fallback when the RPC has not been installed yet.
+    const { data: rows } = await supabase.from('vendors')
+      .select('category_id').eq('status', 'approved').not('category_id', 'is', null).limit(1000);
+    const map = {};
+    (rows || []).forEach(r => { map[r.category_id] = (map[r.category_id] || 0) + 1; });
+    return map;
+  },
+
+  /* New arrivals that show at most `perVendor` products per vendor so a
+     single storefront cannot flood a discovery grid. */
+  async discoverProducts({ perVendor = 1, size = 12, categoryId = null, search = '' } = {}) {
+    if (!supabase) return [];
+    const select = 'id,name,slug,price,currency,is_available,is_preorder,created_at,vendor_id,'
+      + 'vendors!inner(id,business_name,slug,status,stall_number),'
+      + 'product_images(storage_path,sort_order)';
+
+    // Preferred: server-side per-vendor cap (requires the SQL upgrade).
+    const { data: ranked, error: rpcError } = await supabase.rpc('jalsa_discover_products', {
+      p_per_vendor: perVendor,
+      p_limit: size,
+      p_category_id: categoryId,
+      p_search: search || null
+    });
+    if (!rpcError && Array.isArray(ranked) && ranked.length) {
+      const order = ranked.map(r => r.product_id);
+      const { data } = await supabase.from('products').select(select).in('id', order);
+      const byId = new Map((data || []).map(row => [row.id, normalizeProduct(row)]));
+      return order.map(id => byId.get(id)).filter(Boolean);
+    }
+    if (!rpcError) return [];
+
+    // Fallback for deployments where the RPC has not been installed yet.
+    let q = supabase.from('products')
+      .select(select)
+      .eq('vendors.status', 'approved')
+      .eq('is_available', true)
+      .order('created_at', { ascending: false })
+      .limit(Math.max(150, size * 12));
+    if (categoryId) q = q.eq('category_id', categoryId);
+    if (search) q = q.ilike('name', `%${search}%`);
+
+    const { data, error } = await q;
+    if (error) { console.warn(error); return []; }
+    const seen = new Map();
+    const out = [];
+    for (const row of (data || [])) {
+      const used = seen.get(row.vendor_id) || 0;
+      if (used >= perVendor) continue;
+      seen.set(row.vendor_id, used + 1);
+      out.push(normalizeProduct(row));
+      if (out.length >= size) break;
+    }
+    return out;
   },
 
   async vendorBySlug(slug) {
@@ -1443,6 +1560,7 @@ async function completePendingSignup() {
       business_name: pending.businessName,
       slug,
       business_category: pending.businessCategory,
+      category_id: categoryIdByName(pending.businessCategory),
       state: pending.state,
       district: pending.district,
       local_jamaat: pending.localJamaat,
@@ -1543,6 +1661,7 @@ async function vendorSignup(form) {
     business_name: form.business_name,
     slug,
     business_category: form.business_category,
+    category_id: categoryIdByName(form.business_category),
     state: form.state,
     district: form.district,
     local_jamaat: form.local_jamaat,
@@ -1797,7 +1916,7 @@ function renderTabbar() {
         { id: 'me', label: 'Me', ico: 'me', href: '#/me' }
       ];
 
-  const current = state.route.name;
+  const current = state.route.name === 'category' ? 'explore' : state.route.name;
   el.innerHTML = `<div class="tabbar-wrap">` + tabs.map(t => `
     <a class="tab ${current === t.id ? 'active' : ''}" href="${t.href}">
       ${icon(t.ico)}<span>${t.label}</span>
@@ -1824,7 +1943,9 @@ function productCard(p) {
       aria-label="${saved ? 'Remove from saved' : 'Save product'}">${icon('saved')}</button>
     <div class="p-body">
       <a href="#/product/${esc(p.id)}" class="p-name">${esc(p.name)}</a>
-      <span class="p-vendor">${esc(p.vendor_name || '')}</span>
+      ${p.vendor_slug
+        ? `<a class="p-vendor" href="#/store/${esc(p.vendor_slug)}">${esc(p.vendor_name || 'Visit store')}</a>`
+        : `<span class="p-vendor">${esc(p.vendor_name || '')}</span>`}
       <div class="row-between" style="margin-top:auto;padding-top:6px;align-items:center">
         <span class="p-price" style="margin:0;padding:0">${money(p.price)}</span>
         ${p.is_available !== false ? `
@@ -1982,8 +2103,7 @@ function renderAuth(view = 'login', data = null) {
             <div class="field">
               <label class="label" for="v-category">Business category *</label>
               <select class="select" id="v-category" name="business_category" required>
-                ${['Food & Snacks','Fashion','Books','Beauty','Electronics','Accessories','Shoes','Perfumes','Islamic Products','Home & Lifestyle','Phones & Accessories','Gifts','Groceries','Services','Other']
-                  .map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+                ${categoryNameOptions()}
               </select>
             </div>
             <div class="field">
@@ -2081,8 +2201,9 @@ function renderAuth(view = 'login', data = null) {
    9. RENDER — ROUTER
    ------------------------------------------------------------ */
 function parseRoute() {
-  const hash = location.hash.replace(/^#/, '') || '/home';
-  const parts = hash.split('/').filter(Boolean);
+  const raw = location.hash.replace(/^#/, '') || '/home';
+  const path = raw.split('?')[0];
+  const parts = path.split('/').filter(Boolean);
   return { name: parts[0] || 'home', params: { id: parts[1], section: parts[1] } };
 }
 
@@ -2115,6 +2236,7 @@ async function router() {
   switch (r.name) {
     case 'home':      return renderHome();
     case 'explore':   return renderExplore();
+    case 'category':  return renderCategory(r.params.id);
     case 'saved':     return renderSaved();
     case 'cart':      return renderCart();
     case 'me':        return renderMe();
@@ -2131,14 +2253,29 @@ async function router() {
    ------------------------------------------------------------ */
 async function renderHome() {
   const view = $('#view');
-  const [vendors, foodVendors, products, anns] = await Promise.all([
-    api.vendors({ limit: 10 }),
-    api.vendors({ limit: 8, foodOnly: true }),
-    api.products({ size: 8 }),
+  const [featuredRes, counts, products, anns] = await Promise.all([
+    api.vendors({ size: 10, sort: 'featured' }),
+    api.vendorCounts(),
+    api.discoverProducts({ perVendor: 1, size: 12 }),
     api.announcements(2)
   ]);
   const ev = state.activeEvent;
-  const firstName = (state.profile?.full_name || '').trim().split(/\s+/)[0] || 'there';
+  const featured = featuredRes.items;
+  const cats = state.categories;
+
+  const ranked = cats
+    .filter(c => (counts[c.id] || 0) > 0)
+    .sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0));
+  const orderedCats = [...cats].sort((a, b) => {
+    const diff = (counts[b.id] || 0) - (counts[a.id] || 0);
+    return diff !== 0 ? diff : (a.sort_order || 0) - (b.sort_order || 0);
+  });
+  const railCats = (ranked.length ? ranked : cats).slice(0, 6);
+  const railResults = await Promise.all(railCats.map(async c => ({
+    cat: c,
+    vendors: (await api.vendors({ categoryId: c.id, size: 8, sort: 'featured' })).items
+  })));
+  const rails = railResults.filter(r => r.vendors.length);
 
   view.innerHTML = `
   <div class="container">
@@ -2154,38 +2291,44 @@ async function renderHome() {
       <div class="notice info" style="margin-top:12px">${icon('bell')}<span><b>${esc(a.title)}</b> — ${esc(a.body)}</span></div>`).join('') : ''}
 
     <section class="section">
-      <div class="section-head"><h2 class="section-title">Browse categories</h2>
-        <a class="link" href="#/explore">See all</a></div>
+      <div class="section-head"><h2 class="section-title">Shop by category</h2>
+        <a class="link" href="#/explore?tab=vendors">See all</a></div>
       <div class="cat-row">
-        ${state.categories.slice(0, 8).map(c => `
-          <a class="cat-chip" href="#/explore?cat=${esc(c.id)}">${esc(c.name)}</a>`).join('')}
+        ${(cats.length
+          ? orderedCats.map(c => `<a class="cat-chip" href="#/category/${esc(c.slug)}">${esc(c.name)}${counts[c.id] ? `<span class="chip-count">${counts[c.id]}</span>` : ''}</a>`)
+          : FALLBACK_CATEGORY_NAMES.slice(0, 10).map(c => `<a class="cat-chip" href="#/explore?tab=vendors">${esc(c)}</a>`)
+        ).join('')}
       </div>
     </section>
 
-    ${foodVendors.length ? `
+    ${featured.length ? `
     <section class="section">
       <div class="section-head">
-        <h2 class="section-title">Food vendors at Jalsa</h2>
-        <a class="link" href="#/explore">See all</a>
+        <h2 class="section-title">Featured &amp; new vendors</h2>
+        <a class="link" href="#/explore?tab=vendors">Explore all</a>
       </div>
       <div class="hscroll">
-        ${foodVendors.map(vendorCard).join('')}
+        ${featured.map(vendorCard).join('')}
       </div>
     </section>` : ''}
 
-    ${vendors.length ? `
+    ${rails.map(r => `
     <section class="section">
       <div class="section-head">
-        <h2 class="section-title">Featured vendors</h2>
-        <a class="link" href="#/explore">Explore</a>
+        <h2 class="section-title">${esc(r.cat.name)}</h2>
+        <a class="link" href="#/category/${esc(r.cat.slug)}">See all</a>
       </div>
       <div class="hscroll">
-        ${vendors.map(vendorCard).join('')}
+        ${r.vendors.map(vendorCard).join('')}
       </div>
-    </section>` : ''}
+    </section>`).join('')}
 
     <section class="section">
-      <div class="section-head"><h2 class="section-title">Discover products</h2></div>
+      <div class="section-head">
+        <h2 class="section-title">New from vendors</h2>
+        <a class="link" href="#/explore?tab=products">See all</a>
+      </div>
+      <p class="sub" style="margin:-4px 0 12px">One pick per vendor — open a storefront to see everything they sell.</p>
       ${products.length
         ? `<div class="product-grid">${products.map(productCard).join('')}</div>`
         : emptyState('box', 'No products yet',
@@ -2201,7 +2344,7 @@ async function renderHome() {
 
   $('#home-search')?.addEventListener('input', debounce((e) => {
     const q = e.target.value.trim();
-    if (q.length >= 2) location.hash = `#/explore?q=${encodeURIComponent(q)}`;
+    if (q.length >= 2) location.hash = `#/explore?q=${encodeURIComponent(q)}&tab=vendors`;
   }, 500));
 }
 
@@ -2242,16 +2385,45 @@ function vendorCard(v) {
   </a>`;
 }
 
+function vendorListItem(v) {
+  return `
+  <a class="list-item" href="#/store/${esc(v.slug)}" style="margin-bottom:0">
+    <div class="li-ico" style="background:var(--green-soft);color:var(--green);font-weight:700">
+      ${esc(initials(v.business_name))}
+    </div>
+    <div class="li-body">
+      <h4>${esc(v.business_name)}</h4>
+      <p>${esc(v.business_category || v.categories?.name || 'Vendor')}${v.stall_number ? ' · Stall ' + esc(v.stall_number) : ''}</p>
+    </div>
+    <span class="li-arrow">${icon('chev')}</span>
+  </a>`;
+}
+
 /* ------------------------------------------------------------
    11. RENDER — EXPLORE
    ------------------------------------------------------------ */
+let pendingExploreFocus = false;
+
 async function renderExplore() {
   const view = $('#view');
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
   const q = params.get('q') || '';
   const cat = params.get('cat') || '';
-  const tab = params.get('tab') || 'products';
-  const sort = params.get('sort') || 'recent';
+  const tab = params.get('tab') === 'products' ? 'products' : 'vendors';
+  const allProducts = params.get('all') === '1';
+  const catName = state.categories.find(c => c.id === cat)?.name || '';
+
+  const vendorSorts = ['featured', 'recent', 'name'];
+  const productSorts = ['recent', 'price_asc', 'price_desc'];
+  const allowedSorts = tab === 'vendors' ? vendorSorts : productSorts;
+  let sort = params.get('sort') || '';
+  if (!allowedSorts.includes(sort)) sort = tab === 'vendors' ? 'featured' : 'recent';
+
+  const link = (patch) => {
+    const p = new URLSearchParams(params.toString());
+    Object.entries(patch).forEach(([k, v]) => { (v === null || v === '') ? p.delete(k) : p.set(k, v); });
+    return `#/explore?${p.toString()}`;
+  };
 
   view.innerHTML = `
     <div class="container">
@@ -2262,54 +2434,82 @@ async function renderExplore() {
         </div>
       </div>
       <div class="cat-row" style="margin-bottom:14px">
-        <a class="cat-chip ${!cat ? 'active' : ''}" href="#/explore?tab=${tab}">All</a>
+        <a class="cat-chip ${!cat ? 'active' : ''}" href="${link({ cat: null })}">All</a>
         ${state.categories.map(c => `
-          <a class="cat-chip ${cat === c.id ? 'active' : ''}" href="#/explore?cat=${esc(c.id)}&tab=${tab}&sort=${sort}">${esc(c.name)}</a>`).join('')}
+          <a class="cat-chip ${cat === c.id ? 'active' : ''}" href="${link({ cat: c.id })}">${esc(c.name)}</a>`).join('')}
       </div>
       <div class="row-between" style="margin-bottom:16px;flex-wrap:wrap;gap:10px">
         <div class="segmented">
-          <button class="${tab === 'products' ? 'on' : ''}" data-action="explore-tab" data-tab="products">Products</button>
           <button class="${tab === 'vendors' ? 'on' : ''}" data-action="explore-tab" data-tab="vendors">Vendors</button>
+          <button class="${tab === 'products' ? 'on' : ''}" data-action="explore-tab" data-tab="products">Products</button>
         </div>
-        ${tab === 'products' ? `
         <select class="select" id="sort-select" style="width:auto;height:38px;padding:0 38px 0 12px;font-size:.79rem">
-          <option value="recent" ${sort === 'recent' ? 'selected' : ''}>Recently added</option>
-          <option value="price_asc" ${sort === 'price_asc' ? 'selected' : ''}>Price: low to high</option>
-          <option value="price_desc" ${sort === 'price_desc' ? 'selected' : ''}>Price: high to low</option>
-        </select>` : ''}
+          ${tab === 'vendors' ? `
+            <option value="featured" ${sort === 'featured' ? 'selected' : ''}>Featured first</option>
+            <option value="recent" ${sort === 'recent' ? 'selected' : ''}>Recently joined</option>
+            <option value="name" ${sort === 'name' ? 'selected' : ''}>Name: A–Z</option>` : `
+            <option value="recent" ${sort === 'recent' ? 'selected' : ''}>Recently added</option>
+            <option value="price_asc" ${sort === 'price_asc' ? 'selected' : ''}>Price: low to high</option>
+            <option value="price_desc" ${sort === 'price_desc' ? 'selected' : ''}>Price: high to low</option>`}
+        </select>
       </div>
-      <div id="explore-results">${skeletonGrid(6)}</div>
+      <div id="explore-results">${skeletonGrid(tab === 'vendors' ? 4 : 6)}</div>
     </div>`;
+
+  if (pendingExploreFocus) {
+    const input = $('#explore-search');
+    if (input) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+    pendingExploreFocus = false;
+  }
 
   const results = $('#explore-results');
   if (tab === 'vendors') {
-    const vendors = await api.vendors({ limit: 40 });
-    const filtered = q ? vendors.filter(v => v.business_name.toLowerCase().includes(q.toLowerCase())) : vendors;
-    results.innerHTML = filtered.length
-      ? `<div class="stack">${filtered.map(v => `
-          <a class="list-item" href="#/store/${esc(v.slug)}" style="margin-bottom:0">
-            <div class="li-ico" style="background:var(--green-soft);color:var(--green);font-weight:700">
-              ${esc(initials(v.business_name))}
-            </div>
-            <div class="li-body">
-              <h4>${esc(v.business_name)}</h4>
-              <p>${esc(v.business_category || 'Vendor')}${v.stall_number ? ' · Stall ' + esc(v.stall_number) : ''}</p>
-            </div>
-            <span class="li-arrow">${icon('chev')}</span>
-          </a>`).join('')}</div>`
-      : emptyState('store', 'No vendors found', 'Try a different search term.');
-  } else {
-    const products = await api.products({ size: 24, category: cat || null, search: q, sort });
+    const { items, count } = await api.vendors({
+      page: 0, size: CONFIG.PAGE_SIZE, categoryId: cat || null, search: q, sort
+    });
+    results.innerHTML = count
+      ? `<p class="sub" style="margin-bottom:10px">${count} vendor${count === 1 ? '' : 's'}${catName ? ' in ' + esc(catName) : ''}${q ? ` matching “${esc(q)}”` : ''}</p>
+         <div class="stack" id="explore-vendors">${items.map(vendorListItem).join('')}</div>
+         ${count > items.length
+           ? `<button class="btn btn-ghost btn-block" style="margin-top:14px" data-action="explore-more"
+                data-kind="vendors" data-page="1" data-cat="${esc(cat)}" data-q="${esc(q)}" data-sort="${esc(sort)}">Load more vendors</button>`
+           : ''}`
+      : emptyState('store', 'No vendors found', 'Try a different search term or category.',
+          `<a class="btn btn-ghost" href="${link({ tab: 'products' })}">Search products instead</a>`);
+  } else if (allProducts) {
+    const products = await api.products({ page: 0, size: CONFIG.PAGE_SIZE, category: cat || null, search: q, sort });
     results.innerHTML = products.length
-      ? `<div class="product-grid">${products.map(productCard).join('')}</div>`
-      : emptyState('search', 'Nothing matched', 'Try different keywords or another category.');
+      ? `<p class="sub" style="margin-bottom:10px">All products${catName ? ' in ' + esc(catName) : ''} ·
+           <a class="link" href="${link({ all: null })}">Back to vendor picks</a></p>
+         <div class="product-grid" id="explore-products">${products.map(productCard).join('')}</div>
+         ${products.length >= CONFIG.PAGE_SIZE
+           ? `<button class="btn btn-ghost btn-block" style="margin-top:14px" data-action="explore-more"
+                data-kind="products" data-page="1" data-cat="${esc(cat)}" data-q="${esc(q)}" data-sort="${esc(sort)}">Load more products</button>`
+           : ''}`
+      : emptyState('search', 'Nothing matched', 'Try different keywords or another category.',
+          `<a class="btn btn-ghost" href="${link({ tab: 'vendors' })}">Search vendors instead</a>`);
+  } else {
+    const products = await api.discoverProducts({ perVendor: 1, size: 24, categoryId: cat || null, search: q });
+    results.innerHTML = products.length
+      ? `<p class="sub" style="margin-bottom:10px">One pick per vendor${catName ? ' in ' + esc(catName) : ''} ·
+           <a class="link" href="${link({ all: '1' })}">Show all products</a></p>
+         <div class="product-grid">${products.map(productCard).join('')}</div>`
+      : emptyState('search', 'Nothing matched', 'Try different keywords or another category.',
+          `<a class="btn btn-ghost" href="${link({ tab: 'vendors' })}">Search vendors instead</a>`);
   }
 
   $('#explore-search')?.addEventListener('input', debounce((e) => {
     const val = e.target.value.trim();
     const p = new URLSearchParams(location.hash.split('?')[1] || '');
     val ? p.set('q', val) : p.delete('q');
-    location.hash = `#/explore?${p.toString()}`;
+    const next = `#/explore?${p.toString()}`;
+    if (next !== location.hash) {
+      pendingExploreFocus = true;
+      location.hash = next;
+    }
   }, 450));
 
   $('#sort-select')?.addEventListener('change', (e) => {
@@ -2320,13 +2520,80 @@ async function renderExplore() {
 }
 
 /* ------------------------------------------------------------
+   11b. RENDER — CATEGORY
+   ------------------------------------------------------------ */
+async function renderCategory(slug) {
+  const view = $('#view');
+  const cat = categoryBySlug(slug);
+  if (!cat) {
+    view.innerHTML = `<div class="container">${emptyState('tag', 'Category not found',
+      'This category may have been renamed or removed.',
+      '<a class="btn btn-primary" href="#/explore?tab=vendors">Browse vendors</a>')}</div>`;
+    return;
+  }
+
+  view.innerHTML = `
+  <div class="container">
+    <div style="padding:20px 0 14px">
+      <a class="icon-btn" href="#/explore?tab=vendors&cat=${esc(cat.id)}" aria-label="Back" style="margin-bottom:10px">${icon('chevL')}</a>
+      <h1 class="display" style="font-size:1.8rem">${esc(cat.name)}</h1>
+      <p class="sub" id="category-count">Loading vendors…</p>
+    </div>
+    <div id="category-vendors" class="vendor-grid"></div>
+    <div id="category-more-wrap" style="margin-top:16px"></div>
+    <section class="section" id="category-products-section" style="display:none">
+      <div class="section-head">
+        <h2 class="section-title">Popular in ${esc(cat.name)}</h2>
+        <a class="link" href="#/explore?tab=products&cat=${esc(cat.id)}&all=1">See all products</a>
+      </div>
+      <div class="product-grid" id="category-products"></div>
+    </section>
+    <div style="height:30px"></div>
+  </div>`;
+
+  const size = CONFIG.PAGE_SIZE;
+  const [{ items, count }, products] = await Promise.all([
+    api.vendors({ page: 0, size, categoryId: cat.id, sort: 'featured' }),
+    api.discoverProducts({ perVendor: 2, size: 12, categoryId: cat.id })
+  ]);
+
+  const countEl = $('#category-count');
+  if (countEl) countEl.textContent = count
+    ? `${count} vendor${count === 1 ? '' : 's'} — open a storefront to see everything they sell.`
+    : 'Vendors will appear here once approved.';
+
+  const box = $('#category-vendors');
+  if (box) {
+    box.innerHTML = items.length
+      ? items.map(vendorCard).join('')
+      : emptyState('store', 'No vendors here yet', 'Check back soon or explore other categories.',
+          '<a class="btn btn-primary" href="#/explore?tab=vendors">Explore vendors</a>');
+  }
+
+  if (count > items.length) {
+    const wrap = $('#category-more-wrap');
+    if (wrap) wrap.innerHTML = `<button class="btn btn-ghost btn-block" data-action="category-more"
+      data-slug="${esc(cat.slug)}" data-page="1">Load more vendors</button>`;
+  }
+
+  if (products.length) {
+    const section = $('#category-products-section');
+    const grid = $('#category-products');
+    if (section && grid) {
+      section.style.display = '';
+      grid.innerHTML = products.map(productCard).join('');
+    }
+  }
+}
+
+/* ------------------------------------------------------------
    12. RENDER — PRODUCT DETAIL
    ------------------------------------------------------------ */
 async function renderProduct(id) {
   const view = $('#view');
   const p = await api.product(id);
   if (!p) {
-    view.innerHTML = `<div class="container">${emptyState('alert', 'Product not found', 'This product may have been removed or is no longer available.', '<a class="btn btn-primary" href="#/explore">Browse products</a>')}</div>`;
+    view.innerHTML = `<div class="container">${emptyState('alert', 'Product not found', 'This product may have been removed or is no longer available.', '<a class="btn btn-primary" href="#/explore?tab=products">Browse products</a>')}</div>`;
     return;
   }
   api.trackView('product', p.id);
@@ -2399,7 +2666,7 @@ async function renderStore(slug) {
   const view = $('#view');
   const v = await api.vendorBySlug(slug);
   if (!v) {
-    view.innerHTML = `<div class="container">${emptyState('store', 'Store not found', 'This storefront does not exist or has not been verified yet.', '<a class="btn btn-primary" href="#/explore">Explore vendors</a>')}</div>`;
+    view.innerHTML = `<div class="container">${emptyState('store', 'Store not found', 'This storefront does not exist or has not been verified yet.', '<a class="btn btn-primary" href="#/explore?tab=vendors">Explore vendors</a>')}</div>`;
     return;
   }
   api.trackView('storefront', v.id);
@@ -2463,7 +2730,7 @@ async function renderSaved() {
       ? `<div class="product-grid">${list.map(productCard).join('')}</div>`
       : emptyState('saved', 'Nothing saved yet',
           'Tap the heart on any product to save it for later.',
-          '<a class="btn btn-primary" href="#/explore">Explore products</a>')}
+          '<a class="btn btn-primary" href="#/explore?tab=products">Explore products</a>')}
     <div style="height:30px"></div>
   </div>`;
 }
@@ -2569,7 +2836,7 @@ async function renderCart() {
       <button class="btn btn-ghost btn-block" style="margin-top:12px" data-action="go-explore">Continue browsing</button>
     ` : emptyState('cart', 'Your cart is empty',
         'Browse products from any vendor and add them here. You can order from several vendors at once.',
-        '<a class="btn btn-primary" href="#/explore">Start shopping</a>')}
+        '<a class="btn btn-primary" href="#/explore?tab=products">Start shopping</a>')}
 
     <div style="height:30px"></div>
   </div>`;
@@ -2873,6 +3140,9 @@ function renderVendorProfile() {
   }
   const logo = v.logo_path ? storageUrl(v.logo_path) : null;
   const cover = v.cover_path ? storageUrl(v.cover_path) : null;
+  const currentCategory = v.business_category
+    || state.categories.find(c => c.id === v.category_id)?.name
+    || '';
 
   view.innerHTML = `
   <div class="container">
@@ -2912,8 +3182,7 @@ function renderVendorProfile() {
         <div class="field">
           <label class="label">Business category *</label>
           <select class="select" name="business_category" required>
-            ${['Food & Snacks','Fashion','Books','Beauty','Electronics','Accessories','Shoes','Perfumes','Islamic Products','Home & Lifestyle','Phones & Accessories','Gifts','Groceries','Services','Other']
-              .map(c => `<option value="${esc(c)}" ${v.business_category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+            ${categoryNameOptions(currentCategory)}
           </select>
         </div>
         <div class="field">
@@ -2974,6 +3243,8 @@ function renderVendorProfile() {
     if (btn) { btn.disabled = true; btn.textContent = 'Saving changes...'; }
     const fd = new FormData(form);
     const patch = Object.fromEntries(fd.entries());
+    const resolvedCategory = categoryIdByName(patch.business_category);
+    if (resolvedCategory) patch.category_id = resolvedCategory;
     try {
       if (supabase && state.vendor?.id) {
         const { error } = await supabase.from('vendors').update(patch).eq('id', state.vendor.id);
@@ -3508,6 +3779,55 @@ Sent from Jalsa Market`;
     return;
   }
 
+  if (action === 'explore-more') {
+    const kind = el.dataset.kind;
+    const page = Number(el.dataset.page || 1);
+    const size = CONFIG.PAGE_SIZE;
+    const cat = el.dataset.cat || null;
+    const q = el.dataset.q || '';
+    const sort = el.dataset.sort || (kind === 'vendors' ? 'featured' : 'recent');
+    el.disabled = true;
+    el.textContent = 'Loading…';
+    try {
+      if (kind === 'vendors') {
+        const { items, count } = await api.vendors({ page, size, categoryId: cat, search: q, sort });
+        $('#explore-vendors')?.insertAdjacentHTML('beforeend', items.map(vendorListItem).join(''));
+        if (!items.length || (page + 1) * size >= count) el.remove();
+        else { el.dataset.page = String(page + 1); el.disabled = false; el.textContent = 'Load more vendors'; }
+      } else {
+        const items = await api.products({ page, size, category: cat, search: q, sort });
+        $('#explore-products')?.insertAdjacentHTML('beforeend', items.map(productCard).join(''));
+        if (items.length < size) el.remove();
+        else { el.dataset.page = String(page + 1); el.disabled = false; el.textContent = 'Load more products'; }
+      }
+    } catch (err) {
+      el.disabled = false;
+      el.textContent = kind === 'vendors' ? 'Load more vendors' : 'Load more products';
+      toast(err.message, 'err');
+    }
+    return;
+  }
+
+  if (action === 'category-more') {
+    const cat = categoryBySlug(el.dataset.slug);
+    if (!cat) return;
+    const page = Number(el.dataset.page || 1);
+    const size = CONFIG.PAGE_SIZE;
+    el.disabled = true;
+    el.textContent = 'Loading…';
+    try {
+      const { items, count } = await api.vendors({ page, size, categoryId: cat.id, sort: 'featured' });
+      $('#category-vendors')?.insertAdjacentHTML('beforeend', items.map(vendorCard).join(''));
+      if (!items.length || (page + 1) * size >= count) el.remove();
+      else { el.dataset.page = String(page + 1); el.disabled = false; el.textContent = 'Load more vendors'; }
+    } catch (err) {
+      el.disabled = false;
+      el.textContent = 'Load more vendors';
+      toast(err.message, 'err');
+    }
+    return;
+  }
+
   /* ---- preferences ---- */
   if (action === 'set-theme')   { state.prefs.theme = el.dataset.theme; savePrefs(); renderSettings(); return; }
   if (action === 'set-textsize'){ state.prefs.textsize = el.dataset.size; savePrefs(); renderSettings(); return; }
@@ -3605,6 +3925,13 @@ async function openProductEditor(id) {
         <input class="input" name="name" required value="${esc(product?.name || '')}"></div>
       <div class="field"><label class="label">Price (₦)</label>
         <input class="input" name="price" type="number" min="0" step="0.01" required value="${esc(product?.price || '')}"></div>
+      ${state.categories.length ? `
+      <div class="field"><label class="label">Category</label>
+        <select class="select" name="category_id">
+          <option value="">Uncategorised</option>
+          ${state.categories.map(c => `<option value="${esc(c.id)}" ${(product?.category_id || state.vendor?.category_id) === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+        </select>
+      </div>` : ''}
       <div class="field"><label class="label">Description</label>
         <textarea class="textarea" name="description">${esc(product?.description || '')}</textarea></div>
       <div class="field"><label class="label">Product image</label>
@@ -3680,6 +4007,7 @@ async function openProductEditor(id) {
       name: fd.get('name'),
       price: Number(fd.get('price')),
       description: fd.get('description') || null,
+      category_id: fd.get('category_id') || null,
       is_available: fd.get('is_available') === 'on',
       is_preorder: fd.get('is_preorder') === 'on'
     };
@@ -3923,7 +4251,7 @@ async function boot() {
     updateCartBadge();
     updateSavedBadge();
     const r = parseRoute();
-    const guestAllowed = ['home', 'explore', 'product', 'store', 'saved', 'cart', 'me', 'settings', 'privacy'];
+    const guestAllowed = ['home', 'explore', 'category', 'product', 'store', 'saved', 'cart', 'me', 'settings', 'privacy'];
     if (location.hash && guestAllowed.includes(r.name)) {
       $('#auth').classList.add('hide');
       $('#app').classList.remove('hide');
