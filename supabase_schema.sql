@@ -664,3 +664,199 @@ $$;
 
 revoke all on function public.jalsa_discover_products(integer, integer, uuid, text) from public;
 grant execute on function public.jalsa_discover_products(integer, integer, uuid, text) to anon, authenticated;
+
+-- ============================================================
+-- WHATSAPP ORDER TRACKING UPGRADE
+-- ------------------------------------------------------------
+-- Orders are completed on WhatsApp, so this records the handoff
+-- (an "order request") and lets the vendor confirm or cancel it
+-- in their dashboard. Only confirmed rows count as a sale.
+-- Safe to run on its own; does not touch existing data.
+-- ============================================================
+
+-- 1. Let the public log lightweight analytics events. RLS is
+--    enabled on these tables but previously had no INSERT policy.
+drop policy if exists "Anyone can log storefront view" on public.storefront_views;
+create policy "Anyone can log storefront view" on public.storefront_views
+  for insert with check (true);
+
+drop policy if exists "Anyone can log product view" on public.product_views;
+create policy "Anyone can log product view" on public.product_views
+  for insert with check (true);
+
+drop policy if exists "Anyone can log whatsapp click" on public.whatsapp_clicks;
+create policy "Anyone can log whatsapp click" on public.whatsapp_clicks
+  for insert with check (true);
+
+-- 2. Vendors can read their own analytics, admins can read all.
+drop policy if exists "Vendors read own storefront views" on public.storefront_views;
+create policy "Vendors read own storefront views" on public.storefront_views
+  for select using (exists (
+    select 1 from public.vendors v
+    where v.id = vendor_id and v.owner_id = auth.uid()
+  ));
+
+drop policy if exists "Vendors read own product views" on public.product_views;
+create policy "Vendors read own product views" on public.product_views
+  for select using (exists (
+    select 1 from public.products p
+    join public.vendors v on v.id = p.vendor_id
+    where p.id = product_id and v.owner_id = auth.uid()
+  ));
+
+drop policy if exists "Vendors read own whatsapp clicks" on public.whatsapp_clicks;
+create policy "Vendors read own whatsapp clicks" on public.whatsapp_clicks
+  for select using (exists (
+    select 1 from public.vendors v
+    where v.id::text = target_id and v.owner_id = auth.uid()
+  ));
+
+drop policy if exists "Admins read storefront views" on public.storefront_views;
+create policy "Admins read storefront views" on public.storefront_views
+  for select using (public.is_admin());
+
+drop policy if exists "Admins read product views" on public.product_views;
+create policy "Admins read product views" on public.product_views
+  for select using (public.is_admin());
+
+drop policy if exists "Admins read whatsapp clicks" on public.whatsapp_clicks;
+create policy "Admins read whatsapp clicks" on public.whatsapp_clicks
+  for select using (public.is_admin());
+
+-- 3. Order handoff table. One row per WhatsApp checkout request.
+create table if not exists public.order_intents (
+  id uuid primary key default gen_random_uuid(),
+  order_code text not null,
+  vendor_id uuid not null references public.vendors(id) on delete cascade,
+  customer_id uuid references auth.users(id) on delete set null,
+  customer_key text not null,
+  customer_name text,
+  customer_phone text,
+  items jsonb not null default '[]'::jsonb,
+  item_count integer not null default 0,
+  subtotal numeric(12,2) not null default 0,
+  status text not null default 'initiated'
+    check (status in ('initiated', 'confirmed', 'cancelled')),
+  source text not null default 'whatsapp',
+  created_at timestamptz not null default now(),
+  confirmed_at timestamptz
+);
+
+create index if not exists order_intents_vendor_idx
+  on public.order_intents (vendor_id, created_at desc);
+create index if not exists order_intents_customer_idx
+  on public.order_intents (customer_key);
+create index if not exists order_intents_status_idx
+  on public.order_intents (status);
+
+alter table public.order_intents enable row level security;
+
+drop policy if exists "Anyone can log order intent" on public.order_intents;
+create policy "Anyone can log order intent" on public.order_intents
+  for insert with check (true);
+
+drop policy if exists "Vendors read own order intents" on public.order_intents;
+create policy "Vendors read own order intents" on public.order_intents
+  for select using (exists (
+    select 1 from public.vendors v
+    where v.id = vendor_id and v.owner_id = auth.uid()
+  ));
+
+drop policy if exists "Vendors update own order intents" on public.order_intents;
+create policy "Vendors update own order intents" on public.order_intents
+  for update using (exists (
+    select 1 from public.vendors v
+    where v.id = vendor_id and v.owner_id = auth.uid()
+  )) with check (exists (
+    select 1 from public.vendors v
+    where v.id = vendor_id and v.owner_id = auth.uid()
+  ));
+
+drop policy if exists "Admins manage order intents" on public.order_intents;
+create policy "Admins manage order intents" on public.order_intents
+  for all using (public.is_admin()) with check (public.is_admin());
+
+grant select, insert, update on public.order_intents to anon, authenticated;
+
+-- 4. Exact per-vendor stats for the vendor dashboard.
+create or replace function public.jalsa_vendor_stats()
+returns jsonb
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  with me as (
+    select id from public.vendors where owner_id = auth.uid() limit 1
+  )
+  select jsonb_build_object(
+    'storefront_views', (
+      select count(*) from public.storefront_views
+      where vendor_id = (select id from me)
+    ),
+    'product_views', (
+      select count(*) from public.product_views pv
+      join public.products p on p.id = pv.product_id
+      where p.vendor_id = (select id from me)
+    ),
+    'whatsapp_clicks', (
+      select count(*) from public.whatsapp_clicks
+      where target_type = 'storefront_contact'
+        and target_id = (select id::text from me)
+    ),
+    'order_requests', (
+      select count(*) from public.order_intents
+      where vendor_id = (select id from me)
+    ),
+    'confirmed_orders', (
+      select count(*) from public.order_intents
+      where vendor_id = (select id from me) and status = 'confirmed'
+    ),
+    'unique_customers', (
+      select count(distinct coalesce(customer_key, customer_phone, id::text))
+      from public.order_intents
+      where vendor_id = (select id from me) and status <> 'cancelled'
+    ),
+    'confirmed_revenue', (
+      select coalesce(sum(subtotal), 0) from public.order_intents
+      where vendor_id = (select id from me) and status = 'confirmed'
+    )
+  );
+$$;
+
+revoke all on function public.jalsa_vendor_stats() from public;
+revoke all on function public.jalsa_vendor_stats() from anon;
+grant execute on function public.jalsa_vendor_stats() to authenticated;
+
+-- 5. Admin view: orders + unique customers per vendor.
+create or replace function public.jalsa_admin_vendor_orders()
+returns table (
+  vendor_id uuid,
+  business_name text,
+  order_requests bigint,
+  confirmed_orders bigint,
+  unique_customers bigint,
+  confirmed_revenue numeric
+)
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select v.id,
+         v.business_name,
+         count(o.id) as order_requests,
+         count(o.id) filter (where o.status = 'confirmed') as confirmed_orders,
+         count(distinct coalesce(o.customer_key, o.customer_phone, o.id::text))
+           filter (where o.status <> 'cancelled') as unique_customers,
+         coalesce(sum(o.subtotal) filter (where o.status = 'confirmed'), 0) as confirmed_revenue
+  from public.vendors v
+  left join public.order_intents o on o.vendor_id = v.id
+  where public.is_admin()
+  group by v.id, v.business_name
+  order by count(o.id) desc, v.business_name;
+$$;
+
+revoke all on function public.jalsa_admin_vendor_orders() from public;
+revoke all on function public.jalsa_admin_vendor_orders() from anon;
+grant execute on function public.jalsa_admin_vendor_orders() to authenticated;
