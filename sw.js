@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jalsa-market-v3';
+const CACHE_NAME = 'jalsa-market-v4';
 const APP_SHELL = [
   './',
   './index.html',
