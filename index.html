@@ -505,6 +505,8 @@ a.p-vendor:hover{ color:var(--green); text-decoration:underline; }
 @media(min-width:860px){ .detail-grid{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:38px; align-items:start; } }
 .sticky-actions{ position:sticky; bottom:calc(var(--tabbar-h) + 12px); z-index:50; }
 @media(min-width:900px){ .sticky-actions{ position:static; } }
+.theme-fab{ display:none; position:fixed; top:14px; right:14px; z-index:120; width:40px; height:40px; border-radius:12px; background:var(--surface); border:1px solid var(--border); color:var(--text); align-items:center; justify-content:center; box-shadow:var(--shadow); }
+#auth:not(.hide) ~ .theme-fab{ display:flex; }
 
 /* Storefront */
 .store-cover{ height:170px; background:linear-gradient(135deg, var(--surface), var(--bg2)); border-radius:var(--radius); overflow:hidden; position:relative; z-index:1; }
@@ -717,6 +719,7 @@ body{ min-width:320px; }
 
 <div id="toast-wrap"></div>
 <div id="modal-root"></div>
+<button id="theme-fab" class="theme-fab" data-action="toggle-theme" aria-label="Toggle theme" title="Toggle light/dark mode"></button>
 
 <!-- ===================== PWA INSTALL BANNER ===================== -->
 <div id="pwa-banner" class="hide" role="complementary" aria-label="Install app">
@@ -751,7 +754,7 @@ const CONFIG = {
   ADMIN_PATH: 'Adminfash'
 };
 const IS_CONFIGURED = Boolean(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
-const BUILD = '2026-11-25-product-theme';
+const BUILD = '2026-11-25-order-tracking';
 window.JALSA_BUILD = BUILD;
 const WA_SUPPORT_DISPLAY = '09037343145';
 
@@ -844,6 +847,35 @@ const waLink = (phone, text) => {
   return `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
 };
 const supportLink = (text) => waLink(CONFIG.SUPPORT_WHATSAPP, text);
+
+/* ---- lightweight order handoff tracking (works on poor networks) ---- */
+const DEVICE_KEY = 'jalsa.device.id';
+const ORDER_QUEUE_KEY = 'jalsa.order.queue.v1';
+function deviceId() {
+  try {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+      id = (crypto.randomUUID?.() || `dev_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`);
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  } catch (_) {
+    return 'dev_unknown';
+  }
+}
+function readOrderQueue() {
+  try { return JSON.parse(localStorage.getItem(ORDER_QUEUE_KEY) || '[]'); } catch (_) { return []; }
+}
+function writeOrderQueue(queue) {
+  try { localStorage.setItem(ORDER_QUEUE_KEY, JSON.stringify(queue.slice(-200))); } catch (_) {}
+}
+async function flushOrderQueue() {
+  if (!supabase) return;
+  const queue = readOrderQueue();
+  if (!queue.length) return;
+  const { error } = await supabase.from('order_intents').insert(queue);
+  if (!error) writeOrderQueue([]);
+}
 
 /* SVG icon set (inline, professional) */
 const ICON = {
@@ -951,6 +983,15 @@ function savePrefs() {
   try { localStorage.setItem(PREFS_KEY, JSON.stringify(state.prefs)); } catch (_) {}
   applyPrefs();
 }
+function refreshThemeToggles() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const label = `Switch to ${isLight ? 'dark' : 'light'} mode`;
+  document.querySelectorAll('[data-action="toggle-theme"]').forEach(btn => {
+    btn.innerHTML = icon(isLight ? 'sun' : 'moon');
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('title', label);
+  });
+}
 function applyPrefs() {
   const root = document.documentElement;
   const t = state.prefs.theme;
@@ -961,6 +1002,7 @@ function applyPrefs() {
   root.setAttribute('data-textsize', state.prefs.textsize);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', resolved === 'light' ? '#FFFFFF' : '#101310');
+  refreshThemeToggles();
 }
 matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (state.prefs.theme === 'system') applyPrefs();
@@ -1399,6 +1441,17 @@ const api = {
   async trackWhatsApp(payload) {
     if (!supabase) return;
     try { await supabase.from('whatsapp_clicks').insert(payload); } catch (_) {}
+  },
+  async logOrderIntent(intent) {
+    if (!supabase) return;
+    try {
+      const { error } = await supabase.from('order_intents').insert(intent);
+      if (error) throw error;
+    } catch (_) {
+      const queue = readOrderQueue();
+      queue.push(intent);
+      writeOrderQueue(queue);
+    }
   }
 };
 
@@ -3016,6 +3069,25 @@ async function renderVendorArea(section = '') {
 
   // Dashboard
   const products = await api.vendorProducts(v.id);
+  let stats = {
+    storefront_views: 0, product_views: 0, whatsapp_clicks: 0,
+    order_requests: 0, confirmed_orders: 0, unique_customers: 0, confirmed_revenue: 0
+  };
+  let recentOrders = [];
+  if (supabase) {
+    try {
+      const { data } = await supabase.rpc('jalsa_vendor_stats');
+      if (data && typeof data === 'object') stats = { ...stats, ...data };
+    } catch (_) {}
+    try {
+      const { data } = await supabase.from('order_intents')
+        .select('id,order_code,customer_name,customer_phone,item_count,subtotal,status,created_at')
+        .eq('vendor_id', v.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      recentOrders = data || [];
+    } catch (_) {}
+  }
   view.innerHTML = `
   <div class="container">
     <div style="padding:22px 0 16px">
@@ -3033,9 +3105,34 @@ async function renderVendorArea(section = '') {
 
     <div class="stat-grid">
       <div class="stat"><b>${products.length}</b><span>Products</span></div>
-      <div class="stat"><b>${v.storefront_views ?? 0}</b><span>Storefront visits</span></div>
-      <div class="stat"><b>${v.product_views ?? 0}</b><span>Product views</span></div>
-      <div class="stat"><b>${v.whatsapp_clicks ?? 0}</b><span>WhatsApp clicks</span></div>
+      <div class="stat"><b>${stats.storefront_views ?? 0}</b><span>Storefront visits</span></div>
+      <div class="stat"><b>${stats.product_views ?? 0}</b><span>Product views</span></div>
+      <div class="stat"><b>${stats.whatsapp_clicks ?? 0}</b><span>WhatsApp contacts</span></div>
+      <div class="stat"><b>${stats.order_requests ?? 0}</b><span>Order requests</span></div>
+      <div class="stat"><b>${stats.confirmed_orders ?? 0}</b><span>Confirmed sales</span></div>
+      <div class="stat"><b>${stats.unique_customers ?? 0}</b><span>Unique customers</span></div>
+      <div class="stat"><b>${money(stats.confirmed_revenue || 0)}</b><span>Confirmed value</span></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h4 style="font-size:.86rem">Recent order requests</h4>
+        <span class="sub" style="font-size:.72rem">Confirm only after the sale is completed</span>
+      </div>
+      ${recentOrders.length ? `<div class="stack">${recentOrders.map(o => `
+        <div class="list-item" style="flex-wrap:wrap">
+          <div class="li-body">
+            <h4>${esc(o.customer_name || 'Customer')} <span class="sub" style="font-weight:400">· ${esc(o.order_code || '')}</span></h4>
+            <p>${Number(o.item_count) || 0} item${Number(o.item_count) === 1 ? '' : 's'} · ${money(o.subtotal)} · ${new Date(o.created_at).toLocaleDateString()}</p>
+          </div>
+          <span class="status ${o.status === 'confirmed' ? 'approved' : o.status === 'cancelled' ? 'suspended' : 'pending'}">${esc(o.status)}</span>
+          <div class="row" style="gap:6px">
+            <button class="btn btn-sm btn-ghost" data-action="order-view" data-id="${esc(o.id)}">View</button>
+            ${o.status === 'initiated' ? `
+              <button class="btn btn-sm btn-primary" data-action="order-confirm" data-id="${esc(o.id)}">Confirm</button>
+              <button class="btn btn-sm btn-ghost" data-action="order-cancel" data-id="${esc(o.id)}">Cancel</button>` : ''}
+          </div>
+        </div>`).join('')}</div>` : `<p class="sub" style="font-size:.8rem">No order requests yet. Each WhatsApp checkout appears here with a reference code.</p>`}
     </div>
 
     <div style="margin-top:16px">
@@ -3398,7 +3495,7 @@ async function renderAdmin(section = '') {
   const view = $('#view');
   const tabs = [
     ['', 'Overview'], ['vendors', 'Vendor Applications'], ['customers', 'Customers'],
-    ['products', 'Products'], ['categories', 'Categories'], ['announcements', 'Announcements'],
+    ['orders', 'Orders'], ['products', 'Products'], ['categories', 'Categories'], ['announcements', 'Announcements'],
     ['reports', 'Reports'], ['events', 'Events'], ['settings', 'Settings']
   ];
 
@@ -3420,10 +3517,12 @@ async function renderAdmin(section = '') {
   const body = $('#admin-body');
   try {
     if (!section) {
-      const [vendors, products, customers] = await Promise.all([
+      const [vendors, products, customers, orders, confirmed] = await Promise.all([
         supabase.from('vendors').select('id,status'),
         supabase.from('products').select('id', { count: 'exact', head: true }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true })
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('order_intents').select('id', { count: 'exact', head: true }),
+        supabase.from('order_intents').select('id', { count: 'exact', head: true }).eq('status', 'confirmed')
       ]);
       const vlist = vendors.data || [];
       body.innerHTML = `
@@ -3432,7 +3531,25 @@ async function renderAdmin(section = '') {
           <div class="stat"><b>${vlist.length}</b><span>Vendors</span></div>
           <div class="stat"><b>${vlist.filter(v => v.status === 'approved').length}</b><span>Approved</span></div>
           <div class="stat"><b>${vlist.filter(v => v.status === 'pending').length}</b><span>Pending</span></div>
+          <div class="stat"><b>${orders.count ?? 0}</b><span>Order requests</span></div>
+          <div class="stat"><b>${confirmed.count ?? 0}</b><span>Confirmed sales</span></div>
         </div>`;
+    }
+
+    if (section === 'orders') {
+      const { data, error } = await supabase.rpc('jalsa_admin_vendor_orders');
+      const rows = (!error && Array.isArray(data)) ? data : [];
+      body.innerHTML = rows.length ? `
+        <p class="sub" style="font-size:.78rem;margin-bottom:12px">Only confirmed orders count as sales. Unique customers are counted per vendor from checkout requests.</p>
+        <div class="stack">${rows.map(r => `
+          <div class="list-item" style="flex-wrap:wrap">
+            <div class="li-body">
+              <h4>${esc(r.business_name)}</h4>
+              <p>${Number(r.order_requests) || 0} requests · ${Number(r.confirmed_orders) || 0} confirmed · ${Number(r.unique_customers) || 0} customers</p>
+            </div>
+            <b>${money(r.confirmed_revenue || 0)}</b>
+          </div>`).join('')}</div>`
+        : emptyState('chart', 'No order requests yet', 'WhatsApp checkout requests will be counted per vendor here.');
     }
 
     if (section === 'vendors') {
@@ -3550,6 +3667,16 @@ document.addEventListener('click', async (e) => {
   const el = e.target.closest('[data-action]');
   if (!el) return;
   const action = el.dataset.action;
+
+  /* ---- lightweight WhatsApp contact analytics (do not block the link) ---- */
+  if (action === 'wa-contact') {
+    api.trackWhatsApp({
+      target_type: 'storefront_contact',
+      target_id: el.dataset.vendor || '',
+      payload: { customer_key: state.profile?.id || deviceId() }
+    });
+    return;
+  }
 
   /* ---- auth view switching ---- */
   if (action === 'auth-view') { e.preventDefault(); return renderAuth(el.dataset.view); }
@@ -3740,11 +3867,14 @@ document.addEventListener('click', async (e) => {
 
     const customerName = state.profile?.full_name || 'Customer';
     const customerPhone = state.profile?.phone || '—';
+    const orderCode = 'JM-' + Date.now().toString(36).slice(-4).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
+    const totalQty = lines.reduce((s, l) => s + l.qty, 0);
 
     const message =
 `*Jalsa Market — Order Enquiry*
 ${vendor.business_name || 'Vendor'}${vendor.stall_number ? ` · Stall ${vendor.stall_number}` : ''}
 
+*Order ref:* ${orderCode}
 *Customer:* ${customerName}
 *Phone:* ${customerPhone}
 
@@ -3755,14 +3885,21 @@ ${lines.map((l, i) => `${i + 1}. ${l.name} × ${l.qty} — ${money(l.line)}`).jo
 ${vendor.preorder_details ? `\n*Preorder:* ${vendor.preorder_details}` : ''}
 ${vendor.collection_info ? `\n*Collection:* ${vendor.collection_info}` : ''}
 
+Please confirm this order in your Jalsa Market dashboard (ref ${orderCode}).
 Sent from Jalsa Market`;
 
-    api.trackWhatsApp({
+    api.logOrderIntent({
+      order_code: orderCode,
       vendor_id: vendorId,
       customer_id: state.profile?.id || null,
-      click_type: 'checkout',
-      item_count: items.reduce((s, i) => s + i.quantity, 0),
-      subtotal
+      customer_key: state.profile?.id || deviceId(),
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      items: lines,
+      item_count: totalQty,
+      subtotal,
+      status: 'initiated',
+      source: 'whatsapp'
     });
    // Force a session check on page load so the hash token is consumed
    // and the auth state is up‑to‑date.
@@ -3774,6 +3911,46 @@ Sent from Jalsa Market`;
 
     window.open(waLink(vendor.whatsapp_number, message), '_blank', 'noopener');
     toast('Opening WhatsApp — this is an enquiry, not a confirmed order.');
+    return;
+  }
+
+  if (action === 'order-view') {
+    try {
+      const { data } = await supabase.from('order_intents')
+        .select('order_code,customer_name,customer_phone,items,subtotal,status')
+        .eq('id', el.dataset.id).maybeSingle();
+      if (!data) return;
+      const items = Array.isArray(data.items) ? data.items : [];
+      openSheet(`
+        <h2>Order ${esc(data.order_code || '')}</h2>
+        <div class="sheet-body">
+          <p class="sub">${esc(data.customer_name || 'Customer')} · ${esc(data.customer_phone || '')}</p>
+          <div class="stack" style="margin-top:12px">
+            ${items.map(it => `<div class="row" style="justify-content:space-between;gap:10px">
+              <span>${esc(it.name || 'Item')} × ${Number(it.qty) || 1}</span>
+              <b>${money(it.line ?? ((Number(it.price) || 0) * (Number(it.qty) || 1)))}</b>
+            </div>`).join('')}
+          </div>
+          <div class="row" style="justify-content:space-between;margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+            <b>Subtotal</b><b>${money(data.subtotal)}</b>
+          </div>
+        </div>
+        <div class="sheet-actions"><button class="btn btn-ghost btn-block" data-action="close-sheet">Close</button></div>`);
+    } catch (err) { toast(err.message, 'err'); }
+    return;
+  }
+
+  if (action === 'order-confirm' || action === 'order-cancel') {
+    const status = action === 'order-confirm' ? 'confirmed' : 'cancelled';
+    try {
+      const { error } = await supabase.from('order_intents').update({
+        status,
+        confirmed_at: status === 'confirmed' ? new Date().toISOString() : null
+      }).eq('id', el.dataset.id);
+      if (error) throw error;
+      toast(status === 'confirmed' ? 'Order confirmed' : 'Order cancelled');
+      await renderVendorArea();
+    } catch (err) { toast(err.message, 'err'); }
     return;
   }
 
@@ -4276,6 +4453,7 @@ async function boot() {
   }
 
   state.booted = true;
+  flushOrderQueue();
 
   // Service worker
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
@@ -4284,7 +4462,7 @@ async function boot() {
 }
 
 window.addEventListener('hashchange', () => { if (state.booted) router(); });
-window.addEventListener('online', () => toast('Back online'));
+window.addEventListener('online', () => { toast('Back online'); flushOrderQueue(); });
 window.addEventListener('offline', () => toast('You are offline — showing cached content', 'err'));
 
 /* ------------------------------------------------------------
