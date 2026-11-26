@@ -870,7 +870,7 @@ function writeOrderQueue(queue) {
   try { localStorage.setItem(ORDER_QUEUE_KEY, JSON.stringify(queue.slice(-200))); } catch (_) {}
 }
 async function flushOrderQueue() {
-  if (!supabase) return;
+  if (!supabase || !state.profile) return;
   const queue = readOrderQueue();
   if (!queue.length) return;
   const { error } = await supabase.from('order_intents').insert(queue);
@@ -1185,12 +1185,13 @@ const api = {
     return data || null;
   },
 
-  async vendorProducts(vendorId) {
+  async vendorProducts(vendorId, { includeUnavailable = false } = {}) {
     if (!supabase) return [];
-    const { data } = await supabase.from('products')
+    let q = supabase.from('products')
       .select('id,name,slug,price,currency,is_available,is_preorder,created_at,vendor_id,product_images(storage_path,sort_order)')
-      .eq('vendor_id', vendorId).eq('is_available', true)
-      .order('created_at', { ascending: false }).limit(60);
+      .eq('vendor_id', vendorId);
+    if (!includeUnavailable) q = q.eq('is_available', true);
+    const { data } = await q.order('created_at', { ascending: false }).limit(60);
     return (data || []).map(normalizeProduct);
   },
 
@@ -1303,6 +1304,7 @@ const api = {
   },
 
   async addToCart(product, vendor, qty = 1) {
+    if (!state.profile) throw new Error('Please sign in to add items to your cart.');
     const v = vendor || product.vendors || {};
     const livePrice = Number(product.price ?? 0);
 
@@ -1487,6 +1489,15 @@ function storageUrl(path) {
 const SIGNED_OUT_KEY = 'jalsa.signed_out';
 function isSignedOut() { try { return localStorage.getItem(SIGNED_OUT_KEY) === '1'; } catch { return false; } }
 function setSignedOut(v) { try { v ? localStorage.setItem(SIGNED_OUT_KEY, '1') : localStorage.removeItem(SIGNED_OUT_KEY); } catch (_) {} }
+
+/* Cart is only for signed-in customers. A visitor (no profile) must sign up or
+   log in first so orders always carry a real name and phone number. */
+function requireCustomerAuth(message = 'Please sign in to add items to your cart.') {
+  if (state.profile) return true;
+  toast(message, 'err');
+  renderAuth('login');
+  return false;
+}
 
 async function restoreSession() {
   if (!supabase) {
@@ -2277,7 +2288,7 @@ async function router() {
   if (r.name === 'privacy') return renderPrivacy();
 
   // Protected routes that strictly require authentication
-  const authOnly = ['vendor'];
+  const authOnly = ['vendor', 'cart'];
   if (!state.profile && authOnly.includes(r.name)) {
     renderAuth('login');
     return;
@@ -3068,7 +3079,7 @@ async function renderVendorArea(section = '') {
   if (section === 'profile') return renderVendorProfile();
 
   // Dashboard
-  const products = await api.vendorProducts(v.id);
+  const products = await api.vendorProducts(v.id, { includeUnavailable: true });
   let stats = {
     storefront_views: 0, product_views: 0, whatsapp_clicks: 0,
     order_requests: 0, confirmed_orders: 0, unique_customers: 0, confirmed_revenue: 0
@@ -3174,13 +3185,14 @@ async function renderVendorArea(section = '') {
 
 async function renderVendorProducts() {
   const view = $('#view');
-  const products = await api.vendorProducts(state.vendor.id);
+  const products = await api.vendorProducts(state.vendor.id, { includeUnavailable: true });
+  const published = products.filter(p => p.is_available !== false).length;
   view.innerHTML = `
   <div class="container">
     <div class="row-between" style="padding:22px 0 16px">
       <div>
         <h1 class="display" style="font-size:1.7rem">Products</h1>
-        <p class="sub">${products.length} published</p>
+        <p class="sub">${published} published${products.length > published ? ` · ${products.length - published} hidden` : ''}</p>
       </div>
       <button class="btn btn-primary btn-sm" data-action="new-product">${icon('plus')} Add</button>
     </div>
@@ -3708,7 +3720,11 @@ document.addEventListener('click', async (e) => {
     return;
   }
 
-  if (action === 'go-cart') { location.hash = '#/cart'; return; }
+  if (action === 'go-cart') {
+    if (!requireCustomerAuth('Please sign in to view your cart.')) return;
+    location.hash = '#/cart';
+    return;
+  }
   if (action === 'go-me')   { location.hash = '#/me'; return; }
   if (action === 'go-explore') { location.hash = '#/explore'; return; }
   if (action === 'edit-vendor') { location.hash = '#/vendor/profile'; return; }
@@ -3756,6 +3772,7 @@ document.addEventListener('click', async (e) => {
   if (action === 'quick-add-cart') {
     e.preventDefault();
     e.stopPropagation();
+    if (!requireCustomerAuth()) return;
     const pid = el.dataset.id;
     try {
       const p = await api.product(pid);
@@ -3781,6 +3798,7 @@ document.addEventListener('click', async (e) => {
     return;
   }
   if (action === 'detail-add') {
+    if (!requireCustomerAuth()) return;
     const qty = Number($('#detail-qty')?.textContent || 1);
     try {
       const p = await api.product(el.dataset.id);
@@ -3833,6 +3851,7 @@ document.addEventListener('click', async (e) => {
     return;
   }
   if (action === 'checkout-vendor') {
+    if (!requireCustomerAuth('Please sign in before placing an order.')) return;
     const vendorId = el.dataset.vendor;
     const items = state.cart.filter(i => (i.vendor?.id || i.product?.vendor_id) === vendorId);
     if (!items.length) return;
@@ -3867,8 +3886,12 @@ document.addEventListener('click', async (e) => {
    });
     const subtotal = lines.reduce((s, l) => s + l.line, 0);
 
-    const customerName = state.profile?.full_name || 'Customer';
-    const customerPhone = state.profile?.phone || '—';
+    const customerName = (state.profile?.full_name || '').trim();
+    const customerPhone = (state.profile?.phone || '').trim();
+    if (!customerName || !customerPhone) {
+      toast('Your account is missing a name or phone number. Please log out and sign up again.', 'err');
+      return;
+    }
     const orderCode = 'JM-' + Date.now().toString(36).slice(-4).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
     const totalQty = lines.reduce((s, l) => s + l.qty, 0);
 
@@ -4228,21 +4251,24 @@ async function openProductEditor(id) {
         if (error) throw error;
         productId = data.id;
       }
-      if (uploadedPath) {
-        await supabase.from('product_images').insert({
-          product_id: productId, storage_path: uploadedPath, sort_order: 0
-        });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
+      // Image attach is best-effort: a failed image must never hide the product
+      // or leave the list stale. Data-URL previews are local only, so skip them.
+      if (uploadedPath && !String(uploadedPath).startsWith('data:')) {
+        try {
+          const { error: imgError } = await supabase.from('product_images').insert({
+            product_id: productId, storage_path: uploadedPath, sort_order: 0
+          });
+          if (imgError) throw imgError;
+        } catch (imgErr) {
+          console.warn('Product image attach failed:', imgErr);
+          toast('Product saved, but the image could not be attached.', 'err');
+        }
+      } else if (uploadedPath) {
+        toast('Product saved without an image (storage not configured).', 'err');
       }
       closeSheet();
       toast(isEdit ? 'Product updated' : 'Product created');
-      renderVendorProducts();
+      await renderVendorProducts();
     } catch (err) { toast(err.message, 'err'); }
   });
 }
@@ -4453,12 +4479,12 @@ async function boot() {
     $('#app').classList.remove('hide');
     await router();
   } else {
-    state.cart = LOCAL.guestCart;
+    state.cart = [];
     state.saved = new Set(LOCAL.saved);
     updateCartBadge();
     updateSavedBadge();
     const r = parseRoute();
-    const guestAllowed = ['home', 'explore', 'category', 'product', 'store', 'saved', 'cart', 'me', 'settings', 'privacy'];
+    const guestAllowed = ['home', 'explore', 'category', 'product', 'store', 'saved', 'me', 'settings', 'privacy'];
     if (location.hash && guestAllowed.includes(r.name)) {
       $('#auth').classList.add('hide');
       $('#app').classList.remove('hide');
