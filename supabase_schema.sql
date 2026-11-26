@@ -860,3 +860,250 @@ $$;
 revoke all on function public.jalsa_admin_vendor_orders() from public;
 revoke all on function public.jalsa_admin_vendor_orders() from anon;
 grant execute on function public.jalsa_admin_vendor_orders() to authenticated;
+
+-- ============================================================
+-- ANTI-JUNK / ACCOUNT-SAFETY HARDENING (safe for existing data)
+-- ------------------------------------------------------------
+-- * constraints are added NOT VALID: they are enforced on all NEW
+--   writes but existing rows are not retroactively rejected.
+-- * run the AUDIT queries first; then (optionally) VALIDATE CONSTRAINT.
+-- * paired with app-side validation in index.html. Re-runnable.
+-- * NOTE: requires a letter/digit in a name -> blocks punctuation-only
+--   junk like '.....'. It does NOT block a *valid* phone such as
+--   08012345678; junk is stopped via name + validation + moderation.
+-- ============================================================
+
+-- ---- profiles -------------------------------------------------
+alter table public.profiles alter column account_status set default 'active';
+alter table public.profiles drop constraint if exists profiles_account_status_ok;
+alter table public.profiles add constraint profiles_account_status_ok check (
+  account_status is not null
+  and account_status in ('active', 'pending', 'blocked', 'suspended', 'banned')
+) not valid;
+
+alter table public.profiles drop constraint if exists profiles_full_name_ok;
+alter table public.profiles add constraint profiles_full_name_ok check (
+  full_name is not null
+  and length(trim(full_name)) >= 1
+  and trim(full_name) ~ '[[:alnum:]]'                         -- requires a letter/digit; '.....' rejected
+) not valid;
+
+alter table public.profiles drop constraint if exists profiles_phone_ok;
+alter table public.profiles add constraint profiles_phone_ok check (
+  phone is null                                                       -- phoneless profile is harmless...
+  or length(regexp_replace(phone, '\D', '', 'g')) between 7 and 15    -- ...but if present, must be 7-15 digits
+) not valid;
+-- NOTE: phone PRESENCE is enforced app-side + in `User create profile`, NOT at table level,
+--       so `jalsa_claim_admin` (admin seeding, inserts a phoneless profile) keeps working.
+
+-- normalise trivial whitespace on existing names (safe); does NOT invent data
+update public.profiles
+  set full_name = trim(regexp_replace(full_name, '\s+', ' ', 'g'))
+  where full_name is not null and full_name <> trim(regexp_replace(full_name, '\s+', ' ', 'g'));
+
+-- ---- vendors --------------------------------------------------
+alter table public.vendors drop constraint if exists vendors_business_name_ok;
+alter table public.vendors add constraint vendors_business_name_ok check (
+  business_name is not null
+  and length(trim(business_name)) >= 1
+  and trim(business_name) ~ '[[:alnum:]]'
+) not valid;
+
+-- ---- AUDIT (read-only; run before VALIDATE CONSTRAINT) --------
+--   select id, full_name, phone, account_status from public.profiles
+--    where full_name is null or trim(full_name)='' or trim(full_name) !~ '[[:alnum:]]'
+--       or phone is null or length(regexp_replace(coalesce(phone,''),'\D','','g')) not between 7 and 15
+--       or account_status is null or account_status not in ('active','pending','blocked','suspended','banned');
+--   select trim(lower(full_name)) as name, count(*) from public.profiles
+--    group by 1 having count(*) > 1 order by 2 desc;                                                   -- dup names
+--   select regexp_replace(coalesce(phone,''),'\D','','g') d, count(*) from public.profiles
+--    group by 1 having count(*) > 1 order by 2 desc;                                                    -- dup phones
+--   select id, business_name from public.vendors where business_name is null or trim(business_name)='' or trim(business_name) !~ '[[:alnum:]]';
+--   -- then e.g.:
+--   -- alter table public.profiles validate constraint profiles_full_name_ok;
+--   -- alter table public.profiles validate constraint profiles_phone_ok;
+--   -- alter table public.profiles validate constraint profiles_account_status_ok;
+--   -- alter table public.vendors   validate constraint vendors_business_name_ok;
+--
+-- OPTIONAL (only if audit shows no duplicates; protects the name+phone login model):
+--   create unique index if not exists profiles_phone_unique
+--     on public.profiles ( (right(regexp_replace(phone, '\D', '', 'g'), 10)) );   -- last-10 key, NG-aware
+
+-- ---- privileged-column protection ----------------------------
+-- owners/users may edit their own rows but not self-escalate / self-unblock.
+create or replace function public.guard_profiles_privileged() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then
+    if new.id is distinct from old.id
+       or new.account_status is distinct from old.account_status then
+      raise exception 'not allowed to change protected profile fields';
+    end if;
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists guard_profiles_privileged on public.profiles;
+create trigger guard_profiles_privileged
+  before update on public.profiles
+  for each row execute function public.guard_profiles_privileged();
+
+create or replace function public.guard_vendor_privileged() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then
+    if new.id is distinct from old.id
+       or new.owner_id is distinct from old.owner_id
+       or new.status is distinct from old.status          -- admin-only approval (you approve vendors)
+       or new.is_featured is distinct from old.is_featured
+       or new.verified_at is distinct from old.verified_at
+       or new.suspended_at is distinct from old.suspended_at then
+      raise exception 'not allowed to change protected vendor fields';
+    end if;
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists guard_vendor_privileged on public.vendors;
+create trigger guard_vendor_privileged
+  before update on public.vendors
+  for each row execute function public.guard_vendor_privileged();
+
+-- ---- RLS hardening -------------------------------------------
+-- profiles: own row; trigger blocks self-escalation; admins may update.
+drop policy if exists "User update profile" on public.profiles;
+create policy "User update profile" on public.profiles
+  for update using (auth.uid() = id) with check (auth.uid() = id);
+
+drop policy if exists "Admins can update all profiles" on public.profiles;
+create policy "Admins can update all profiles" on public.profiles
+  for update using (public.is_admin()) with check (public.is_admin());
+
+-- profiles INSERT already `auth.uid()=id`; add safe-content checks.
+drop policy if exists "User create profile" on public.profiles;
+create policy "User create profile" on public.profiles
+  for insert with check (
+    auth.uid() = id
+    and account_status = 'active'
+    and full_name is not null and length(trim(full_name)) >= 1 and trim(full_name) ~ '[[:alnum:]]'
+    and (phone is null or length(regexp_replace(phone, '\D', '', 'g')) between 7 and 15)
+  );
+-- NOTE: phone PRESENCE required by the app + name+phone login, not by RLS,
+--       so `jalsa_claim_admin` (security definer; inserts phoneless admin profile) is unaffected.
+
+-- vendors: owner can edit own content; cannot self-approve; admins (you) approve.
+drop policy if exists "Owner update vendor" on public.vendors;
+create policy "Owner update vendor" on public.vendors
+  for update using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+
+drop policy if exists "Vendor create own record" on public.vendors;
+create policy "Vendor create own record" on public.vendors
+  for insert with check (
+    auth.uid() = owner_id
+    and status = 'pending'                         -- starts pending; admin approves
+    and is_featured = false
+    and verified_at is null
+    and suspended_at is null
+    and business_name is not null and length(trim(business_name)) >= 1 and trim(business_name) ~ '[[:alnum:]]'
+  );
+
+-- keep "Admins can update all vendors" (is_admin) for approve/suspend; trigger exempts admins.
+
+-- order intents: only signed-in customers, valid status/source, sane sizes, approved vendor.
+drop policy if exists "Anyone can log order intent" on public.order_intents;
+create policy "Customers can log order intent" on public.order_intents
+  for insert with check (
+    auth.role() = 'authenticated'
+    and (customer_id is null or customer_id = auth.uid())
+    and status = 'initiated'
+    and source = 'whatsapp'
+    and subtotal >= 0
+    and item_count >= 0
+    and length(coalesce(order_code, '')) between 1 and 64
+    and length(coalesce(customer_name, '')) <= 120
+    and length(coalesce(customer_phone, '')) <= 32
+    and length(coalesce(customer_key, '')) <= 128
+    and exists (select 1 from public.vendors v where v.id = vendor_id and v.status = 'approved')
+  );
+revoke insert on public.order_intents from anon;   -- ordering requires a signed-in (anonymous-auth) user
+
+-- ---- remove unused, dangerous security-definer RPCs ----------
+-- The app calls NONE of these; they are legacy email-OTP-era helpers.
+-- `jalsa_authenticate_login` (security definer, granted anon) cross-user matches,
+-- SETS a known deterministic password and RETURNS it; `jalsa_lookup_login`
+-- (security definer, granted anon) leaks id/email/name/phone cross-user.
+-- NOTE: admin seeding is intentionally LEFT UNTOUCHED
+--       (`seed_admin_by_email`, `jalsa_claim_admin`, `admin_secrets`, `ADMIN_PATH`).
+drop function if exists public.jalsa_authenticate_login(text, text, text);
+drop function if exists public.jalsa_lookup_login(text, text, text);
+
+-- ---- PII scrub on customer removal (order_intents keeps text copies) ----
+-- order_intents.customer_id -> set null, but customer_name/customer_phone/customer_key remain.
+-- Recommended after deleting a user (or for the junk customer below): scrub PII first.
+--   delete from public.order_intents where customer_id = :uid or customer_key = :uid::text;
+
+
+-- ============================================================
+-- ONE-TIME PURGE: junk customer  name = '.....'  phone = '08012345678'
+-- ------------------------------------------------------------
+-- This is a *runbook*, COMMENTED OUT. It does NOT run when this file
+-- is applied. Run it manually against PRODUCTION with service-role
+-- (Supabase SQL Editor / a one-off server script; NEVER from the app;
+-- never add service_role to CONFIG). Back up first. The app cannot
+-- delete a user (no profiles DELETE policy; cannot delete auth.users).
+-- NOTE: in production this row has is_vendor = true. A `vendors` row may exist
+-- for it (pending/approved) + products; `vendors.owner_id -> SET NULL`, so
+-- DELETE the vendor row first or it (and its products) would be orphaned.
+-- Replace :uid with the profiles.id. Wrapped in a transaction.
+--
+-- 0) find it (read-only). name is literally '.....'; match phone last-10.
+--    select id, full_name, phone, email, is_vendor, account_status, created_at
+--    from public.profiles
+--    where full_name = '.....'
+--       or right(regexp_replace(coalesce(phone,''), '\D','','g'), 10) = '8012345678';
+--    -- 08012345678 -> digits '08012345678' -> last-10 '8012345678'; +2348012345678 also matches.
+--    -- then:  \set uid '<the-id>'
+--
+-- 1) inspect linked rows (read-only).
+--    select * from public.order_intents where customer_id = :uid or customer_key = :uid::text
+--      or right(regexp_replace(coalesce(customer_phone,''),'\D','','g'),10) = '8012345678';
+--    select * from public.saved_products where customer_id = :uid;
+--    select * from public.carts where customer_id = :uid;
+--    select * from public.user_consents where user_id = :uid;
+--    select * from public.admin_users where user_id = :uid;                 -- expect none (customer)
+--    select id, owner_id, business_name, status from public.vendors where owner_id = :uid;  -- expect none
+--    select * from public.whatsapp_clicks where payload->>'customer_key' = :uid::text;
+--
+-- 2) purge. order_intents has NO FK to profiles + keeps PII copies -> scrub first.
+--    NOTE: this user has is_vendor=true. If a vendors row references this user it
+--    would be SET NULL (not cascade) and its products would survive -> DELETE
+--    the vendor row first (cascades products/product_images/order_intents-vendor).
+--
+-- begin;
+--   delete from public.order_intents
+--    where customer_id = :uid or customer_key = :uid::text
+--       or right(regexp_replace(coalesce(customer_phone,''),'\D','','g'),10) = '8012345678';
+--   delete from public.saved_products where customer_id = :uid;
+--   delete from public.carts where customer_id = :uid;            -- cascades cart_items
+--   delete from public.user_consents where user_id = :uid;
+--   delete from public.admin_users where user_id = :uid;          -- no-op for a customer
+--   delete from public.vendors where owner_id = :uid;             -- REQUIRED if is_vendor=true; cascades products; else SET NULL
+--   delete from public.profiles where id = :uid;                  -- service-role only (no RLS delete policy)
+--   delete from public.whatsapp_clicks where payload->>'customer_key' = :uid::text;  -- optional PII scrub
+-- commit;
+--
+-- 3) delete the auth identity (removes auth.users + sessions/refresh tokens; cascades again).
+--    PREFERRED:  supabase.auth.admin.deleteUser(:uid)   -- service-role admin API / Dashboard
+--    (or, in SQL editor as service role, AFTER step 2:  delete from auth.users where id = :uid;)
+--    FK order matters: vendors.owner_id -> set null; order_intents.customer_id -> set null;
+--    everything else -> cascade. Delete vendors + scrub order_intents BEFORE deleting auth.users.
+--
+-- 4) verify.   select * from public.profiles where id = :uid;                                  -- 0 rows
+--              select * from auth.users where id = :uid;                                       -- 0 rows
+--              select * from public.order_intents where customer_id = :uid or customer_key=:uid::text
+--                or right(regexp_replace(coalesce(customer_phone,''),'\D','','g'),10)='8012345678'; -- 0 rows
+--              select * from public.vendors where owner_id is null;                            -- no orphans created
+--
+-- 5) on that customer's own device, clear app data (localStorage jalsa.*, sb-*-auth-token,
+--    sessionStorage jalsa.pending.signup); a stale anonymous token then fails -> guest mode.
+--    Server-side removal alone does not clear their browser.

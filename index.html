@@ -778,6 +778,39 @@ const initials = (name) => String(name || '?').trim().split(/\s+/).slice(0, 2)
 const slugify = (s) => String(s || '').toLowerCase().normalize('NFKD')
   .replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-').slice(0, 60);
 
+/* ---- input hygiene: stop junk / spam signups at the source ---- */
+const NAME_MIN = 1, NAME_MAX = 120;
+const PHONE_MIN_DIGITS = 7, PHONE_MAX_DIGITS = 15;
+
+/* strip control chars, collapse whitespace, trim, cap length */
+function cleanText(s, max = 200) {
+  return String(s ?? '')
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+    .trim().replace(/\s+/g, ' ').slice(0, max);
+}
+/* "......" / punctuation-only / whitespace-only => junk; requires a Unicode letter or number */
+function isJunkText(s) { const t = cleanText(s); return !t || !/[\p{L}\p{N}]/u.test(t); }
+function normalizeName(s) { return cleanText(s, NAME_MAX); }
+function nameIsValid(s) { const t = normalizeName(s); return t.length >= NAME_MIN && !isJunkText(t); }
+
+function phoneDigits(s) { return String(s ?? '').replace(/\D/g, ''); }
+function phoneIsValid(s) { const d = phoneDigits(s); return d.length >= PHONE_MIN_DIGITS && d.length <= PHONE_MAX_DIGITS; }
+/* canonical storage form. Nigerian-aware: +234XXXXXXXXXX. Never invents a number. */
+function normalizePhone(s) {
+  const raw = String(s ?? '').trim();
+  let d = phoneDigits(raw);
+  if (!d) return '';
+  if (d.startsWith('00')) d = d.slice(2);            // international dialing prefix
+  if (d.startsWith('234')) d = d.slice(3);           // Nigeria country code
+  else if (d.startsWith('0')) d = d.slice(1);        // local trunk 0
+  if (d.length === 10 && /^[789][01]\d{8}$/.test(d)) return '+234' + d;  // NG mobile
+  const full = phoneDigits(raw);
+  if (full.length >= PHONE_MIN_DIGITS && full.length <= PHONE_MAX_DIGITS) return (raw.startsWith('+') ? '+' : '') + full;
+  return raw;                                        // leave as typed; validation will reject
+}
+/* match key for login: digits, last-10 tolerant (matches existing last-10 matching) */
+function phoneMatchKey(s) { const d = phoneDigits(s); return d.length > 10 ? d.slice(-10) : d; }
+
 const timeAgo = (iso) => {
   if (!iso) return '';
   const d = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -1289,13 +1322,6 @@ const api = {
           vendor: r.products.vendors
         };
       });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
     } catch (err) {
       console.warn('Cart load error:', err);
       state.cart = [];
@@ -1324,13 +1350,6 @@ const api = {
           product: { ...product, price: livePrice },
           vendor: v
         });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
       }
       LOCAL.guestCart = cart;
       state.cart = cart;
@@ -1358,13 +1377,6 @@ const api = {
           quantity: qty,
           price_snapshot: livePrice
         });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
       }
       await api.loadCart();
     } catch (err) {
@@ -1383,13 +1395,6 @@ const api = {
           product: { ...product, price: livePrice },
           vendor: v
         });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
       }
       LOCAL.guestCart = cart;
       state.cart = cart;
@@ -1510,10 +1515,9 @@ async function restoreSession() {
   state.session = data?.session || null;
   if (!state.session) return false;
 
-  await completePendingSignup(); // Email verification disabled
-
   const { data: prof } = await supabase.from('profiles').select('*').eq('id', state.session.user.id).maybeSingle();
   if (!prof) return false;
+  if (prof.account_status && prof.account_status !== 'active') return false;   // blocked accounts
   state.profile = prof;
 
   const { data: adminRow } = await supabase.from('admin_users').select('user_id').eq('user_id', state.session.user.id).maybeSingle();
@@ -1558,96 +1562,8 @@ async function afterAuth() {
   if (state.vendor) state.mode = 'vendor';
 }
 
-async function completePendingSignup() {
-  let pending;
-  try {
-    pending = JSON.parse(sessionStorage.getItem('jalsa.pending.signup') || 'null');
-  } catch (_) {
-    return;
-  }
-  if (!pending || !state.session?.user?.id) return;
-
-  const uid = state.session.user.id;
-
-  if (pending.role === 'user') {
-    const { error } = await supabase.from('profiles').upsert({
-      id: uid,
-      full_name: pending.fullName,
-      email: pending.email,
-      phone: pending.phone,
-      is_vendor: false,
-      marketing_consent: Boolean(pending.consent),
-      consent_at: pending.consent ? new Date().toISOString() : null
-    });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
-    if (error) throw error;
-
-    if (pending.consent) {
-      await supabase.from('user_consents').insert({
-        user_id: uid,
-        consent_type: 'whatsapp_marketing',
-        granted: true
-      });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
-    }
-  } else {
-    const { error: profileError } = await supabase.from('profiles').upsert({
-      id: uid,
-      full_name: pending.ownerName,
-      email: pending.email,
-      phone: pending.phone,
-      is_vendor: true
-    });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
-    if (profileError) throw profileError;
-
-    const baseSlug = slugify(pending.businessName) || 'store';
-    const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
-    const { error: vendorError } = await supabase.from('vendors').insert({
-      owner_id: uid,
-      business_name: pending.businessName,
-      slug,
-      business_category: pending.businessCategory,
-      category_id: categoryIdByName(pending.businessCategory),
-      state: pending.state,
-      district: pending.district,
-      local_jamaat: pending.localJamaat,
-      participation_type: pending.participationType,
-      stall_number: pending.stallNumber || null,
-      description: pending.description,
-      whatsapp_number: pending.phone,
-      status: 'pending'
-    });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
-    if (vendorError) throw vendorError;
-  }
-
-  sessionStorage.removeItem('jalsa.pending.signup');
-}
+/* (removed dead completePendingSignup: nothing ever writes 'jalsa.pending.signup';
+   anonymous signup + name+phone login replaced the email-OTP flow.) */
 
 async function refreshCart() { await api.loadCart(); updateCartBadge(); }
 async function refreshSaved() {
@@ -1658,9 +1574,14 @@ async function refreshSaved() {
 
 async function customerSignup({ fullName, phone, consent }) {
   setSignedOut(false);
+  // anti-junk: real name (not punctuation-only like ".....") + a real phone number
+  const cleanName = normalizeName(fullName);
+  if (!nameIsValid(cleanName)) throw new Error('Please enter your real full name (not just symbols).');
+  const cleanPhone = normalizePhone(phone);
+  if (!phoneIsValid(cleanPhone)) throw new Error('Please enter a valid phone number.');
   if (!supabase) {
     state.profile = {
-      id: 'demo-user', full_name: fullName, phone,
+      id: 'demo-user', full_name: cleanName, phone: cleanPhone,
       marketing_consent: consent, created_at: new Date().toISOString()
     };
     LOCAL.profile = state.profile;
@@ -1674,7 +1595,7 @@ async function customerSignup({ fullName, phone, consent }) {
   if (!uid) throw new Error('Could not create account. Please try again.');
   // Save profile to DB (name + phone are the login credentials, so fail loudly).
   const { error: profError } = await supabase.from('profiles').upsert({
-    id: uid, full_name: fullName, phone,
+    id: uid, full_name: cleanName, phone: cleanPhone,
     marketing_consent: consent, is_vendor: false
   });
   if (profError) throw new Error('Could not save your profile: ' + profError.message);
@@ -1687,21 +1608,28 @@ async function customerSignup({ fullName, phone, consent }) {
 
 async function vendorSignup(form) {
   setSignedOut(false);
+  // anti-junk: real owner name + business name + a real phone number
+  const ownerName = normalizeName(form.owner_name);
+  if (!nameIsValid(ownerName)) throw new Error("Please enter the owner's real full name (not just symbols).");
+  const businessName = normalizeName(form.business_name);
+  if (!nameIsValid(businessName)) throw new Error('Please enter a real business name (not just symbols).');
+  const cleanPhone = normalizePhone(form.phone);
+  if (!phoneIsValid(cleanPhone)) throw new Error('Please enter a valid WhatsApp number.');
   if (!supabase) {
-    const slug = `${slugify(form.business_name) || 'store'}-${Math.random().toString(36).slice(2, 6)}`;
+    const slug = `${slugify(businessName) || 'store'}-${Math.random().toString(36).slice(2, 6)}`;
     state.profile = {
       id: 'demo-vendor',
-      full_name: form.owner_name,
-      phone: form.phone,
+      full_name: ownerName,
+      phone: cleanPhone,
       is_vendor: true
     };
     state.vendor = {
       id: 'demo-vendor-store',
       owner_id: 'demo-vendor',
-      business_name: form.business_name,
+      business_name: businessName,
       slug,
       business_category: form.business_category,
-      whatsapp_number: form.phone,
+      whatsapp_number: cleanPhone,
       status: 'pending'
     };
     LOCAL.profile = state.profile;
@@ -1716,15 +1644,15 @@ async function vendorSignup(form) {
   if (!uid) throw new Error('Could not create account. Please try again.');
   // Save profile to DB (name + phone are the login credentials, so fail loudly).
   const { error: profError } = await supabase.from('profiles').upsert({
-    id: uid, full_name: form.owner_name, phone: form.phone, is_vendor: true
+    id: uid, full_name: ownerName, phone: cleanPhone, is_vendor: true
   });
   if (profError) throw new Error('Could not save your profile: ' + profError.message);
   // Save vendor store to DB.
-  const baseSlug = slugify(form.business_name) || 'store';
+  const baseSlug = slugify(businessName) || 'store';
   const slug = baseSlug + '-' + Math.random().toString(36).slice(2, 6);
   const { error: vendorError } = await supabase.from('vendors').insert({
     owner_id: uid,
-    business_name: form.business_name,
+    business_name: businessName,
     slug,
     business_category: form.business_category,
     category_id: categoryIdByName(form.business_category),
@@ -1734,8 +1662,8 @@ async function vendorSignup(form) {
     participation_type: form.participation_type,
     stall_number: form.stall_number || null,
     description: form.description,
-    whatsapp_number: form.phone,
-    status: 'pending'
+    whatsapp_number: cleanPhone,
+    status: 'pending'                       // admin approves; owner cannot self-approve (RLS)
   });
   if (vendorError) throw new Error('Could not save your storefront: ' + vendorError.message);
   await restoreSession();
@@ -1746,8 +1674,8 @@ async function vendorSignup(form) {
 }
 
 async function loginByNameAndPhone(role, name, phone) {
-  const cleanName  = String(name  || '').trim();
-  const cleanPhone = String(phone || '').replace(/\D/g, '');
+  const cleanName  = normalizeName(name);
+  const cleanPhone = phoneDigits(phone);
   if (!cleanName || !cleanPhone) throw new Error('Enter both your name and phone number.');
 
   if (!supabase) {
@@ -1789,16 +1717,17 @@ async function loginByNameAndPhone(role, name, phone) {
     throw new Error('Your saved session has no profile. Please sign up again.');
   }
 
-  const digits = s => String(s || '').replace(/\D/g, '');
-  const storedPhone = digits(prof.phone);
+  const storedPhone = phoneDigits(prof.phone);
   if (!storedPhone) {
     throw new Error('This account has no phone number saved. Please sign up again so we can store it.');
   }
-  const phoneOk = storedPhone === cleanPhone
-    || (storedPhone.length >= 10 && cleanPhone.length >= 10
-        && storedPhone.slice(-10) === cleanPhone.slice(-10));
+  const phoneOk = storedPhone === cleanPhone || phoneMatchKey(storedPhone) === phoneMatchKey(cleanPhone);
   if (!phoneOk) {
     throw new Error('That phone number does not match the account saved on this device.');
+  }
+  // blocked accounts cannot re-attach
+  if (prof.account_status && prof.account_status !== 'active') {
+    throw new Error('This account is not active. Please contact support.');
   }
 
   const { data: v } = await supabase.from('vendors').select('*').eq('owner_id', prof.id).maybeSingle();
@@ -1807,7 +1736,7 @@ async function loginByNameAndPhone(role, name, phone) {
   const sameFirstWord = (a, b) => {
     const x = String(a || '').trim().split(/\s+/)[0].toLowerCase();
     const y = String(b || '').trim().split(/\s+/)[0].toLowerCase();
-    return !x || !y || x === y;
+    return !!x && !!y && x === y;          // both must be present and match (no empty-match)
   };
   const nameOk = role === 'vendor'
     ? sameFirstWord(vendorRow?.business_name, cleanName) || sameFirstWord(prof.full_name, cleanName)
@@ -3360,6 +3289,18 @@ function renderVendorProfile() {
     if (btn) { btn.disabled = true; btn.textContent = 'Saving changes...'; }
     const fd = new FormData(form);
     const patch = Object.fromEntries(fd.entries());
+    if (patch.business_name != null) patch.business_name = normalizeName(patch.business_name);
+    if ('business_name' in patch && !nameIsValid(patch.business_name)) {
+      toast('Please enter a real business name (not just symbols).', 'err');
+      if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+      return;
+    }
+    if (patch.whatsapp_number != null) patch.whatsapp_number = normalizePhone(patch.whatsapp_number);
+    if ('whatsapp_number' in patch && !phoneIsValid(patch.whatsapp_number)) {
+      toast('Please enter a valid WhatsApp number.', 'err');
+      if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+      return;
+    }
     const resolvedCategory = categoryIdByName(patch.business_category);
     if (resolvedCategory) patch.category_id = resolvedCategory;
     try {
@@ -3428,13 +3369,6 @@ function renderVendorProfile() {
         }
       }
     });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
   });
 }
 
@@ -3492,13 +3426,6 @@ async function renderAdmin(section = '') {
         errEl.classList.remove('hide');
       }
     });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
     return;
   }
 
@@ -3755,13 +3682,6 @@ document.addEventListener('click', async (e) => {
         btn.classList.toggle('on', nowSaved);
         btn.setAttribute('aria-label', nowSaved ? 'Remove from saved' : 'Save product');
       });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
       toast(nowSaved ? 'Added to saved products' : 'Removed from saved');
       if (state.route.name === 'saved') renderSaved();
     } catch (err) { toast(err.message, 'err'); }
@@ -3877,13 +3797,6 @@ document.addEventListener('click', async (e) => {
       const price = live?.price ?? i.price_snapshot ?? i.product?.price ?? 0;
       return { name: i.product?.name || 'Product', qty: i.quantity, price, line: price * i.quantity };
     });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
     const subtotal = lines.reduce((s, l) => s + l.line, 0);
 
     const customerName = (state.profile?.full_name || '').trim();
@@ -3926,13 +3839,6 @@ Sent from Jalsa Market`;
       status: 'initiated',
       source: 'whatsapp'
     });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
 
     window.open(waLink(vendor.whatsapp_number, message), '_blank', 'noopener');
     toast('Opening WhatsApp — this is an enquiry, not a confirmed order.');
@@ -4203,13 +4109,6 @@ async function openProductEditor(id) {
       const res = await uploadImage(file, IMG_PRESETS.product, state.vendor.id, (pct) => {
         bar.querySelector('i').style.width = pct + '%';
       });
-   // Force a session check on page load so the hash token is consumed
-   // and the auth state is up‑to‑date.
-   supabase.auth.getSession().then(({ data, error }) => {
-     if (error) console.error('Supabase session init error:', error);
-     // Remove the fragment from the URL for security.
-     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-   });
       uploadedPath = res.storagePath;
       toast(`Image ready (${res.sizeKB} KB)`);
     } catch (err) {
@@ -4302,8 +4201,8 @@ document.addEventListener('submit', async (e) => {
       errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    if (!fullName) return showCustomerError('Please enter your full name.', 'full_name');
-    if (!phone || phone.replace(/\D/g, '').length < 10) return showCustomerError('Please enter a valid phone number (at least 10 digits).', 'phone');
+    if (!nameIsValid(fullName)) return showCustomerError('Please enter your real full name (not just symbols).', 'full_name');
+    if (!phoneIsValid(phone)) return showCustomerError('Please enter a valid phone number.', 'phone');
 
     const btn = form.querySelector('button[type=submit]');
     btn.disabled = true;
@@ -4354,9 +4253,9 @@ document.addEventListener('submit', async (e) => {
       errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    if (!businessName) return showVendorError('Please enter your business name.', 'business_name');
-    if (!ownerName) return showVendorError("Please enter the owner's full name.", 'owner_name');
-    if (!phone || phone.replace(/\D/g, '').length < 10) return showVendorError('Please enter a valid WhatsApp number (at least 10 digits).', 'phone');
+    if (!nameIsValid(businessName)) return showVendorError('Please enter a real business name (not just symbols).', 'business_name');
+    if (!nameIsValid(ownerName)) return showVendorError("Please enter the owner's real full name (not just symbols).", 'owner_name');
+    if (!phoneIsValid(phone)) return showVendorError('Please enter a valid WhatsApp number.', 'phone');
     if (!stateVal) return showVendorError('Please enter your state.', 'state');
     if (!district) return showVendorError('Please enter your district or dila.', 'district');
     if (!localJamaat) return showVendorError('Please enter your local Jamaat.', 'local_jamaat');
@@ -4439,6 +4338,23 @@ document.addEventListener('change', (e) => {
 /* ------------------------------------------------------------
    21. BOOT
    ------------------------------------------------------------ */
+const AUTH_HASH_PARAMS = ['access_token', 'refresh_token', 'provider_token', 'provider_refresh_token',
+  'expires_in', 'expires_at', 'token_type', 'type', 'error', 'error_code', 'error_description', 'sb'];
+/* Strip Supabase auth tokens from the URL fragment WITHOUT clobbering the app route.
+   (Replaces scattered `history.replaceState(..., location.pathname + location.search)` calls.) */
+function stripAuthTokensFromUrl() {
+  try {
+    const h = location.hash.replace(/^#/, '');
+    if (!h || h.startsWith('/')) return;          // app routes like #/home are left untouched
+    const params = new URLSearchParams(h);
+    let changed = false;
+    for (const k of AUTH_HASH_PARAMS) { if (params.has(k)) { params.delete(k); changed = true; } }
+    if (!changed) return;
+    const rest = params.toString();
+    history.replaceState(null, '', location.pathname + location.search + (rest ? '#' + rest : ''));
+  } catch (_) {}
+}
+
 async function boot() {
   loadPrefs();
   console.info('[Jalsa] build', BUILD);
@@ -4473,6 +4389,7 @@ async function boot() {
 
   let authed = false;
   try { authed = await restoreSession(); } catch (err) { console.warn('Session restore failed', err); }
+  stripAuthTokensFromUrl();   // remove only Supabase auth params; preserve app routes
 
   if (authed) {
     $('#auth').classList.add('hide');
