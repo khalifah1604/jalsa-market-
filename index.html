@@ -3131,6 +3131,8 @@ async function renderVendorArea(section = '') {
             ${o.status === 'initiated' ? `
               <button class="btn btn-sm btn-primary" data-action="order-confirm" data-id="${esc(o.id)}">Confirm</button>
               <button class="btn btn-sm btn-ghost" data-action="order-cancel" data-id="${esc(o.id)}">Cancel</button>` : ''}
+            ${o.status === 'confirmed' ? `
+              <button class="btn btn-sm btn-ghost" data-action="order-revert" data-id="${esc(o.id)}">Revert</button>` : ''}
           </div>
         </div>`).join('')}</div>` : `<p class="sub" style="font-size:.8rem">No order requests yet. Each WhatsApp checkout appears here with a reference code.</p>`}
     </div>
@@ -3949,6 +3951,20 @@ Sent from Jalsa Market`;
       }).eq('id', el.dataset.id);
       if (error) throw error;
       toast(status === 'confirmed' ? 'Order confirmed' : 'Order cancelled');
+      await renderVendorArea();
+    } catch (err) { toast(err.message, 'err'); }
+    return;
+  }
+
+  if (action === 'order-revert') {
+    if (!confirm('Revert this confirmed order back to pending? It will no longer count as a sale.')) return;
+    try {
+      const { error } = await supabase.from('order_intents').update({
+        status: 'initiated',
+        confirmed_at: null
+      }).eq('id', el.dataset.id);
+      if (error) throw error;
+      toast('Order reverted to pending');
       await renderVendorArea();
     } catch (err) { toast(err.message, 'err'); }
     return;
